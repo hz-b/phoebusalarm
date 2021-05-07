@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config name="Test">
+  <component name="Group1">
+    <guidance>
+      <title>Description</title>
+      <details>A very important Alarm group</details>
+    </guidance>
+    <guidance>
+      <title>Contacts</title>
+      <details>Global contact for Group1</details>
+    </guidance>
+    <display>
+      <title>Web</title>
+      <details>https://en.wikipedia.org/wiki/Guidance</details>
+    </display>
+    <display>
+      <title>Control</title>
+      <details>/opt/epics/alarm_test/alarm_ctr.bob</details>
+    </display>
+    <component name="Group1_1">
+      <command>
+        <title>run command</title>
+        <details>/home/iocuser/test.sh</details>
+      </command>
+      <automated_action>
+        <title>mail</title>
+        <details>mailto:group1_1@phoebus_test.de</details>
+        <delay>60</delay>
+      </automated_action>
+      <pv name="test:ai1">
+        <description>First Alarm PV</description>
+        <enabled>true</enabled>
+        <latching>true</latching>
+        <annunciating>true</annunciating>
+      </pv>
+      <pv name="test:ai2">
+        <description>Second Alarm PV</description>
+        <enabled>true</enabled>
+        <latching>true</latching>
+        <annunciating>true</annunciating>
+        <delay>5</delay>
+        <filter>test:ai1&lt;3</filter>
+      </pv>
+    </component>
+    <component name="Group1_2">
+      <automated_action>
+        <title>severity</title>
+        <details>sevrpv:test:sevr</details>
+        <delay>0</delay>
+      </automated_action>
+      <pv name="test:ai3">
+        <description>Third Alarm PV</description>
+        <enabled>true</enabled>
+        <latching>false</latching>
+        <annunciating>false</annunciating>
+      </pv>
+    </component>
+  </component>
+</config>
