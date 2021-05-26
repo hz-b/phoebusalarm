@@ -218,6 +218,7 @@ def process_group(alhArgs, tree, currentNode, **kwargs):
     parentName, name = alhArgs.split()
     parentId = find_parent(tree, currentNode, parentName)
     currentNode = tree.create_node(name, parent=parentId)
+    propagate_filter(tree, parentId, currentNode)
     return currentNode, None
 
 
@@ -249,6 +250,13 @@ def process_channel(alhArgs, tree, currentNode, **kwargs):
                         mask, pvName)
     except IndexError:
         logger.debug("No mask for %s", pvName)
+
+    propagate_filter(tree, parentId, currentNode)
+
+    if currentNode.filter and not currentNode.enabled:
+        logger.warning("Manual check required: "
+                       "PV %s is disabled (channel mask), but group has forcePV. "
+                       "In Phoebus this PV will be always DISABLED.", pvName)
 
     return currentNode, None
 
@@ -367,11 +375,11 @@ def process_beep(alhArgs, tree, currentNode, keyword, **kwargs):
 
 
 def process_forcepv(alhArgs, tree, currentNode, **kwargs):
-    if not isinstance(currentNode, AlarmPV):
-        logger.error("Cannot parse forcePV for group %s, because Phoebus"
-                     " does not support forcePV/filter for groups",
-                     currentNode.tag)
-        return currentNode, None
+    # if not isinstance(currentNode, AlarmPV):
+    #     logger.error("Cannot parse forcePV for group %s, because Phoebus"
+    #                  " does not support forcePV/filter for groups",
+    #                  currentNode.tag)
+    #     return currentNode, None
 
     args = alhArgs.split()
 
@@ -393,16 +401,32 @@ def process_forcepv(alhArgs, tree, currentNode, **kwargs):
             resetValue = 0
 
         # forcePV==forceValue disables alarm -> phoebus filter enables alarm
-        if ("C" in forceMask or "D" in forceMask) and currentNode.enabled:
-            comp = "!="
+        if ("C" in forceMask or "D" in forceMask):
+            try:
+                if currentNode.enabled:
+                    comp = "!="
+                else:
+                    comp = ""
+                    logger.warning("Skipping disable forcePV for disabled PV %s"
+                                   ", force mask: %s",
+                                   currentNode.identifier, forceMask)
+            except AttributeError:    # nodes (groups) don't have enabled flag
+                comp = "!="
         # forcePV==forveValue enables alarm -> same as phoebus filter
-        elif not currentNode.enabled and "C" not in forceMask and "D" not in forceMask:
-            comp = "=="
         else:
-            comp = ""
-            logger.error("Can't transfer %s forceMask to a phoebus filter "
-                         "for PV %s with default as active=%s",
-                         forceMask, currentNode.identifier, currentNode.enabled)
+            try:
+                if currentNode.enabled:
+                    comp = ""
+                    logger.warning("Skipping enable forcePV for enabled PV %s"
+                                   ", force mask: %s",
+                                   currentNode.identifier)
+                else:
+                    comp = "=="
+                    logger.debug("Enabling PV %s because it has force PV",
+                                 currentNode.identifier)
+                    currentNode.enabled
+            except AttributeError:
+                comp = "=="
 
         if resetValue != "NE":
             logger.warning("PV %s uses resetValue %s for force, "
@@ -463,6 +487,17 @@ def process_heartbeat(alhArgs, tree, currentNode, **kwargs):
 def process_ignored(alhArgs, tree, currentNode, keyword, **kwargs):
     logger.warning("No equivalent for %s in phoebus", keyword)
     return currentNode, None
+
+
+def propagate_filter(tree, parentId, currentNode):
+    try:
+        parentNode = tree.get_node(parentId)
+        filterStr = parentNode.filter
+        currentNode.filter = filterStr
+        logging.info("Setting ForcePV for %s to %s from parent %s",
+                     currentNode.identifier, filterStr, parentNode.identifier)
+    except AttributeError:
+        pass
 
 
 def command_name(commandString):

@@ -6,12 +6,13 @@ add more tests
 """
 
 import copy
+import os
 import unittest
 from treelib.exceptions import DuplicatedNodeIdError
 
 import context
 import phoebusalarm.alhparser as alh
-from phoebusalarm.alarmtree import AlarmTree
+from phoebusalarm.alarmtree import AlarmTree, AlarmPV
 
 
 class TestGuidance(unittest.TestCase):
@@ -64,7 +65,9 @@ class TestAlias(unittest.TestCase):
         self.tree.create_alarm("test:ai1", parent=self.node)
         nodeDict = copy.copy(self.tree.nodes)
         oldNode = copy.deepcopy(self.node)
-        newNode, tmp = alh.process_alias(self.line, self.tree, self.node)
+        with self.assertLogs(level="ERROR"):
+            newNode, tmp = alh.process_alias(self.line, self.tree, self.node)
+
         # assures nothing changed. Couldn't find a way to do this more directly
         self.assertEqual(nodeDict, self.tree.nodes)
         self.assertEqual(oldNode.tag, newNode.tag)
@@ -104,6 +107,53 @@ class TestParents(unittest.TestCase):
         self.node3 = self.tree.create_node(name="Group4", parent=self.node2)
         parentID = alh.find_parent(self.tree, self.node3, "Group2")
         self.assertEqual(parentID, self.node1.identifier)
+
+
+class TestFilterPropagation(unittest.TestCase):
+    filterStr = "test>5"
+
+    def setUp(self):
+        self.tree = AlarmTree("test")
+        self.node = self.tree.create_node("Group1")
+        self.pv = self.tree.create_alarm("PV1")
+
+    def test_no_filter(self):
+        alh.propagate_filter(self.tree, self.node.identifier, self.pv)
+        self.assertEqual(self.pv.filter, "")
+
+    def test_filter(self):
+        self.node.filter = self.filterStr
+        alh.propagate_filter(self.tree, self.node.identifier, self.pv)
+        self.assertEqual(self.pv.filter, self.filterStr)
+
+
+class TestGroupFilter(unittest.TestCase):
+    inPath = "temp.alh"
+    alhConfig = ("GROUP NULL Group\n"
+                 "$ALIAS Group Name\n"
+                 "$FORCEPV CALC   -D-T-   1       NE\n"
+                 "$FORCEPV_CALC A<B\n"
+                 "$FORCEPV_CALC_A test:ai3\n"
+                 "$FORCEPV_CALC_B 4\n"
+                 "\n"
+                 "CHANNEL Group test:ai1	---T-\n"
+                 "$ALIAS OFF\n"
+                 "\n"
+                 "CHANNEL Group tets:ai2	---T-\n"
+                 "$ALIAS Sum Error\n")
+
+    def setUp(self):
+        with open(self.inPath, "w") as alhFile:
+            alhFile.write(self.alhConfig)
+
+    def test_end_to_end(self):
+        tree = alh.parse_alh(self.inPath, configName="Accelerator")
+        alarms = [node for node in tree.all_nodes() if isinstance(node, AlarmPV)]
+        for alarm in alarms:
+            self.assertEqual(alarm.filter, "(test:ai3<4) != 1")
+
+    def tearDown(self):
+        os.remove(self.inPath)
 
 
 class TestFilterUpdate(unittest.TestCase):
