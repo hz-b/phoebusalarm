@@ -38,7 +38,7 @@ Example Usage:
 >>> tree.write_xml("output.xml")
 
 """
-from collections import namedtuple
+from collections import namedtuple, OrderedDict
 from itertools import chain
 import os
 import xml.etree.ElementTree as ET
@@ -141,7 +141,7 @@ class AlarmNode(Node):
         details : str
             DESCRIPTION.
         """
-        self.actions.append(Action(title, f"cmd:{command}", delay))
+        self.actions.append(Action(title, "cmd:{0}".format(command), delay))
 
     def add_mail(self, recipients, delay, title="mail"):
         """
@@ -160,7 +160,8 @@ class AlarmNode(Node):
         if not isinstance(recipients, str):
             recipients = ",".join(recipients)
 
-        self.actions.append(Action(title, f"mailto:{recipients}", delay))
+        self.actions.append(Action(title, "mailto:{0}".format(recipients),
+                                   delay))
 
     def add_sevr_pv(self, pv, title="Severity PV"):
         """
@@ -173,7 +174,7 @@ class AlarmNode(Node):
         title : str, optional
             Title used in phoebus. The default is "Severity PV".
         """
-        self.actions.append(Action(title, f"sevrpv:{pv}", 0))
+        self.actions.append(Action(title, "sevrpv:{0}".format(pv), 0))
 
     def get_xml_element(self, **kwargs):
         """
@@ -222,7 +223,7 @@ class AlarmPV(AlarmNode):
         """
         xmlElement = super().get_xml_element()
 
-        toAdd = {}
+        toAdd = OrderedDict()
 
         if self.desc:
             toAdd["description"] = self.desc
@@ -377,6 +378,8 @@ class AlarmTree(Tree):
             The created InclusionMarker instance.
 
         """
+        if parent is None:
+            parent = self.root
         inclusionNode = InclusionMarker(filename)
         self.add_node(inclusionNode, parent)
         return inclusionNode

@@ -1,11 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Test for the phoebus alarm tree
-
-Notes:
-    Python <3.7 might break the endtoend test because the order of elements
-    is not preserved.
-
 ToDo:
     Inclusion Marker test (against config working with phoebus)
 """
@@ -13,7 +8,7 @@ ToDo:
 import os
 import unittest
 from treelib.exceptions import DuplicatedNodeIdError
-from xml.etree.ElementTree import Element, canonicalize
+import xml.etree.ElementTree as ET
 
 import context
 from phoebusalarm.alarmtree import AlarmTree, AlarmNode, AlarmPV, InclusionMarker
@@ -48,7 +43,7 @@ class TestAlarmNode(unittest.TestCase):
 
     def test_basics(self):
         xml = self.alarmNode.get_xml_element()
-        self.assertIsInstance(xml, Element)
+        self.assertIsInstance(xml, ET.Element)
         self.assertEqual(xml.tag, "component")
         self.assertEqual(xml.attrib["name"], self.name)
 
@@ -94,9 +89,9 @@ class TestAlarmPV(unittest.TestCase):
         for attrib in ["latching", "enabled", "annunciating"]:
             eleList = xml.findall(attrib)
             self.assertEqual(len(eleList), 1,
-                             f"there should be one and only one {attrib} element")
+                             "there should be exactly one {!s} element".format(attrib))
             self.assertIn(eleList[0].text, ["true", "false"],
-                          f"{attrib} must be true or false")
+                          "{!s} must be true or false".format(attrib))
 
     def test_delay(self):
         self.alarmPV.delay = 10
@@ -176,8 +171,10 @@ class TestEndToEnd(unittest.TestCase):
 
     def test_xml_write(self):
         self.alarmTree.write_xml(outputPath=self.outFile)
-        actualXML = canonicalize(from_file=self.outFile)
-        referenceXML = canonicalize(from_file=self.referenceFile)
+        actualTree = ET.parse(self.outFile)
+        actualXML = ET.tostring(actualTree.getroot())
+        referenceTree = ET.parse(self.referenceFile)
+        referenceXML = ET.tostring(referenceTree.getroot())
         self.maxDiff = None
         self.assertEqual(actualXML, referenceXML)
 
