@@ -4,7 +4,7 @@ A Python package to create alarm configurations for Phoebus
 https://controlssoftware.sns.ornl.gov/css_phoebus/
 
 ## Requirements
-Python >= 3.8 and treelib.
+Python >= 3.5 and treelib.
 
 ## Installation
 Use pip to install the package
