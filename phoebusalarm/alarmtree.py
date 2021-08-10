@@ -57,7 +57,7 @@ class AlarmNode(Node):
     """
     Representation of an alarm tree node
     """
-    def __init__(self, name, identifier=None, alias=None):
+    def __init__(self, name, identifier=None, tag=None):
         """
         Constructor
 
@@ -68,24 +68,20 @@ class AlarmNode(Node):
         identifier : string, optional
             A unique identifier of the Node. If None, a UUID will be created.
             The default is None.
-        alias : string, optional
-            An alternative tag of the node. Not exported to xml. The default is None.
+        tag : string, optional
+            An alternative tag of the node. Not exported to xml.
+            The default is None, which sets tag=name.
         """
-        super().__init__(tag=alias, identifier=identifier)
+        if tag is None:
+            tag = name
+
+        super().__init__(tag=tag, identifier=identifier)
         self.guidances = []
         self.commands = []
         self.displays = []
         self.actions = []
         self._xmlType = "component"
         self._name = name
-
-    @property
-    def alias(self):
-        return self.tag
-
-    @alias.setter
-    def alias(self, alias):
-        self.tag = alias
 
     def add_guidance(self, title, details):
         """
@@ -298,7 +294,7 @@ class AlarmTree(Tree):
         if configName:
             super().create_node(tag=configName, identifier=configName)
 
-    def create_node(self, name, parent=None, alias=None):
+    def create_node(self, name, parent=None, tag=None):
         """
         create an AlarmNode and add it to the tree
 
@@ -309,9 +305,10 @@ class AlarmTree(Tree):
         parent : Node or identifier string, optional
             The parent to add this to. The root element is used when None.
             The default is None.
-        alias : string, optional
-            An alternate description of the node, used as the tag.
-            Not exported to xml. The default is None.
+        tag : string, optional
+            An alternate description of the node.
+            Not exported to xml. Used as GroupName in alh.
+            The default is tag=name.
 
         Returns
         -------
@@ -326,11 +323,8 @@ class AlarmTree(Tree):
                 super().create_node(tag="Accelerator", identifier="Accelerator")
             pid = self.root
 
-        if alias is None:
-            alias = name
-
         identifier = pid+"/"+name
-        alarmNode = AlarmNode(name=name, identifier=identifier, alias=alias)
+        alarmNode = AlarmNode(name=name, identifier=identifier, tag=tag)
         self.add_node(alarmNode, pid)
 
         return alarmNode

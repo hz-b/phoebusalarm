@@ -47,10 +47,6 @@ class TestAlarmNode(unittest.TestCase):
         self.assertEqual(xml.tag, "component")
         self.assertEqual(xml.attrib["name"], self.name)
 
-    def test_alias(self):
-        self.alarmNode.alias = self.alias
-        self.assertEqual(self.alarmNode.tag, self.alias)
-
 
 class TestAlarmTree(unittest.TestCase):
     """

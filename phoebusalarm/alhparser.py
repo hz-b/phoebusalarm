@@ -281,7 +281,7 @@ def process_alias(alhArgs, tree, currentNode, **kwargs):
         # and rember the original alh name only as an alias
         oldNode = currentNode
         oldID = oldNode.identifier
-        oldName = oldNode.alias
+        oldName = oldNode._name
         parent = tree.parent(oldID)
 
         if tree.children(oldID):
@@ -289,7 +289,7 @@ def process_alias(alhArgs, tree, currentNode, **kwargs):
                          "because it has children", oldID, alias)
         else:
             tree.remove_node(oldID)
-            newNode = tree.create_node(alias, parent=parent, alias=oldName)
+            newNode = tree.create_node(alias, parent=parent, tag=oldName)
             newNode.guidances = oldNode.guidances
             newNode.commands = oldNode.commands
             newNode.displays = oldNode.displays
