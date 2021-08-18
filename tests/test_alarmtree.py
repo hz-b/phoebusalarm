@@ -11,41 +11,9 @@ from treelib.exceptions import DuplicatedNodeIdError
 import xml.etree.ElementTree as ET
 
 import context
-from phoebusalarm.alarmtree import AlarmTree, AlarmNode, AlarmPV, InclusionMarker
+from phoebusalarm.alarmtree import AlarmTree
 
 
-class TestInclusionMarker(unittest.TestCase):
-    """
-    Test the InclusionMarker Class
-    """
-    filePath = "test.xml"
-
-    def test_marker(self):
-        marker = InclusionMarker(self.filePath)
-        xml = marker.get_xml_element()
-
-        self.assertEqual(xml.tag, "xi:include")
-        self.assertEqual(xml.attrib["href"], self.filePath)
-        self.assertEqual(xml.attrib["xpointer"], "element(/1/1)")
-
-
-class TestAlarmNode(unittest.TestCase):
-    """
-    Test the element tree conversion in the AlarmNode class
-    """
-    guidance = "some text goes here"
-    display = "/path/to/somewhere"
-    name = "Name"
-    alias = "Another name"
-
-    def setUp(self):
-        self.alarmNode = AlarmNode(name=self.name)
-
-    def test_basics(self):
-        xml = self.alarmNode.get_xml_element()
-        self.assertIsInstance(xml, ET.Element)
-        self.assertEqual(xml.tag, "component")
-        self.assertEqual(xml.attrib["name"], self.name)
 
 
 class TestAlarmTree(unittest.TestCase):
@@ -63,70 +31,16 @@ class TestAlarmTree(unittest.TestCase):
                           "SubGroup", parent=node2)
 
 
-class TestAlarmPV(unittest.TestCase):
-    """
-    Test the element tree conversion in the AlarmPV class
-    """
-
-    pvName = "test:ai1"
-    pvDesc = "a description"
-    pvFilter = "test:ai2 < 3"
-
-    def setUp(self):
-        self.alarmPV = AlarmPV(self.pvName)
-
-    def test_basics(self):
-        xml = self.alarmPV.get_xml_element()
-        self.assertEqual(xml.tag, "pv")
-        self.assertEqual(xml.attrib["name"], self.pvName)
-
-    def test_bool_attr(self):
-        xml = self.alarmPV.get_xml_element()
-        for attrib in ["latching", "enabled", "annunciating"]:
-            eleList = xml.findall(attrib)
-            self.assertEqual(len(eleList), 1,
-                             "there should be exactly one {!s} element".format(attrib))
-            self.assertIn(eleList[0].text, ["true", "false"],
-                          "{!s} must be true or false".format(attrib))
-
-    def test_delay(self):
-        self.alarmPV.delay = 10
-        xml = self.alarmPV.get_xml_element()
-        delayEle = xml.findall("delay")
-        self.assertEqual(len(delayEle), 1,
-                         "there must be one delay element")
-        self.assertEqual(delayEle[0].text, "10",
-                         "delay element has incorrect text")
-
-    def test_count(self):
-        self.alarmPV.count = 5
-        xml = self.alarmPV.get_xml_element()
-        countEle = xml.findall("count")
-        self.assertEqual(len(countEle), 0,
-                         "there should be no count element without delay")
-        self.alarmPV.delay = 10
-        xml = self.alarmPV.get_xml_element()
-        countEle = xml.findall("count")
-        self.assertEqual(len(countEle), 1,
-                         "there should be one count element with delay")
-        self.assertEqual(countEle[0].text, "5",
-                         "count element has incorrect text")
-
-    def test_description(self):
-        self.alarmPV.desc = self.pvDesc
-        xml = self.alarmPV.get_xml_element()
-        descEle = xml.findall("description")
-        self.assertEqual(len(descEle), 1, "there should one description element")
-        self.assertEqual(descEle[0].text, self.pvDesc)
-
 
 class TestEndToEnd(unittest.TestCase):
     """
     Test building of an entire tree and compare to xml exported from phoebus
     """
-    outFile = "unittest_output.xml"
-    referenceFile = os.path.join(os.path.dirname(__file__),
-                                 "reference_config.xml")
+    outFile = "unittest_output"
+    referenceXML = os.path.join(os.path.dirname(__file__),
+                                "reference_phoebus.xml")
+    referenceALH = os.path.join(os.path.dirname(__file__),
+                                "reference_alh.alh")
 
     def setUp(self):
         self.alarmTree = AlarmTree(configName="Test")
@@ -153,7 +67,8 @@ class TestEndToEnd(unittest.TestCase):
         pv2.latch = True
         pv2.annunciate = True
         pv2.delay = 5
-        pv2.filter = "test:ai1<3"
+
+        pv2.add_filter(expr="A<3", replaceDict={"A":"test:ai1"})
 
         # another subgroup
         group1_2 = self.alarmTree.create_node("Group1_2", parent=group1)
@@ -169,10 +84,26 @@ class TestEndToEnd(unittest.TestCase):
         self.alarmTree.write_xml(outputPath=self.outFile)
         actualTree = ET.parse(self.outFile)
         actualXML = ET.tostring(actualTree.getroot())
-        referenceTree = ET.parse(self.referenceFile)
+        referenceTree = ET.parse(self.referenceXML)
         referenceXML = ET.tostring(referenceTree.getroot())
         self.maxDiff = None
         self.assertEqual(actualXML, referenceXML)
+
+    def test_alh_write(self):
+        with self.assertWarns(Warning):
+            self.alarmTree.write_alh(outputPath=self.outFile)
+
+        with open(self.outFile) as f:
+            actualLines = f.readlines()
+
+        with open(self.referenceALH) as f:
+            refLines = f.readlines()
+
+        cleanedRef = [l for l in refLines if l != "\n"]
+        cleanedActual = [l for l in actualLines if l != "\n"]
+
+        self.assertListEqual(cleanedActual, cleanedRef)
+
 
     def tearDown(self):
         os.remove(self.outFile)

@@ -38,248 +38,16 @@ Example Usage:
 >>> tree.write_xml("output.xml")
 
 """
-from collections import namedtuple, OrderedDict
-from itertools import chain
-import os
+
 import xml.etree.ElementTree as ET
 import xml.dom.minidom as minidom
 
-from treelib import Node, Tree
+from treelib import Tree
 
-# define for more clarity later
-Guidance = namedtuple("guidance", ['title', 'details'])
-Display = namedtuple("display", ['title', 'details'])
-Command = namedtuple("command", ['title', 'details'])
-Action = namedtuple("automated_action", ['title', 'details', 'delay'])
+from .alarmnodes import (AlarmNode, AlarmPV, InclusionMarker)
 
 
-class AlarmNode(Node):
-    """
-    Representation of an alarm tree node
-    """
-    def __init__(self, name, identifier=None, tag=None):
-        """
-        Constructor
 
-        Parameters
-        ----------
-        name : string
-            The name of the node as used in phoebus.
-        identifier : string, optional
-            A unique identifier of the Node. If None, a UUID will be created.
-            The default is None.
-        tag : string, optional
-            An alternative tag of the node. Not exported to xml.
-            The default is None, which sets tag=name.
-        """
-        if tag is None:
-            tag = name
-
-        super().__init__(tag=tag, identifier=identifier)
-        self.guidances = []
-        self.commands = []
-        self.displays = []
-        self.actions = []
-        self._xmlType = "component"
-        self._name = name
-
-    def add_guidance(self, title, details):
-        """
-        add a guidance to the alarm
-
-        Parameters
-        ----------
-        title : str
-            title of the guidance shown in phoebus context menu.
-        details : str
-            guidance text, link, info etc.
-        """
-        self.guidances.append(Guidance(title, details))
-
-    def add_command(self, title, details):
-        """
-        add a command, can be executed on demand in phoebus
-
-        Parameters
-        ----------
-        title : str
-            title of the command shown in phoebus context menu.
-        details : str
-            the command to execute.
-        """
-        self.commands.append(Command(title, details))
-
-    def add_display(self, title, details):
-        """
-        add a helpful display
-
-        Parameters
-        ----------
-        title : str
-            title of the display shown in phoebus context menu.
-        details : str
-            path to the display file or full URL if you need to pass macros,
-            see phoebus alarm doc for details.
-        """
-        self.displays.append(Display(title, details))
-
-    def add_auto_action(self, title, delay, command):
-        """
-        add an automatic action, executed when the alarm triggers
-
-        Parameters
-        ----------
-        title : str
-            title to identify action.
-        delay : int
-            time in seconds the alarm needs to be unacknoledged
-            before action is triggered.
-        details : str
-            DESCRIPTION.
-        """
-        self.actions.append(Action(title, "cmd:{0}".format(command), delay))
-
-    def add_mail(self, recipients, delay, title="mail"):
-        """
-        add mail notification to the alarm.
-
-        Parameters
-        ----------
-        recipients : str or list
-            the recipients of the notification.
-        delay : int
-            time in seconds the alrm is unacknowledged before sending mail.
-        title : TYPE, optional
-            title to use inside phoebus. The default is "mail".
-        """
-
-        if not isinstance(recipients, str):
-            recipients = ",".join(recipients)
-
-        self.actions.append(Action(title, "mailto:{0}".format(recipients),
-                                   delay))
-
-    def add_sevr_pv(self, pv, title="Severity PV"):
-        """
-        write the alarm severity value to another PV
-
-        Parameters
-        ----------
-        pv : str
-            the PV to write to.
-        title : str, optional
-            Title used in phoebus. The default is "Severity PV".
-        """
-        self.actions.append(Action(title, "sevrpv:{0}".format(pv), 0))
-
-    def get_xml_element(self, **kwargs):
-        """
-        convert the node to an element tree description to dump as xml
-
-        Returns
-        -------
-        xmlElement : ElementTree element
-            the alarm node as an ElementTree with appropriate children.
-        """
-
-        xmlElement = ET.Element(self._xmlType, name=self._name)
-
-        for entry in chain(self.guidances, self.displays, self.commands, self.actions):
-            subElement = ET.SubElement(xmlElement, type(entry).__name__)
-            for name, value in entry._asdict().items():
-                prop = ET.SubElement(subElement, name)
-                prop.text = str(value)
-
-        return xmlElement
-
-
-class AlarmPV(AlarmNode):
-    """
-    Representation of an alarm PV
-    """
-    def __init__(self, channelPV):
-        super().__init__(name=channelPV, identifier=channelPV)
-        self.desc = ""
-        self.enabled = True
-        self.latch = True
-        self.annunciate = True
-        self.delay = 0
-        self.count = 0
-        self.filter = ""
-        self._xmlType = "pv"
-
-    def get_xml_element(self, **kwargs):
-        """
-        convert the node to an element tree description to dump as xml
-
-        Returns
-        -------
-        xmlElement : ElementTree element
-            the alarm node as an ElementTree with appropriate children.
-        """
-        xmlElement = super().get_xml_element()
-
-        toAdd = OrderedDict()
-
-        if self.desc:
-            toAdd["description"] = self.desc
-
-        toAdd["enabled"] = self.enabled
-        toAdd["latching"] = self.latch
-        toAdd["annunciating"] = self.annunciate
-
-        if self.delay != 0:
-            toAdd["delay"] = self.delay
-            if self.count != 0:
-                toAdd["count"] = self.count
-
-        if self.filter:
-            toAdd["filter"] = self.filter
-
-        for name, value in toAdd.items():
-            prop = ET.SubElement(xmlElement, name)
-            if isinstance(value, bool):
-                prop.text = str(value).lower()
-            else:
-                prop.text = str(value)
-
-        return xmlElement
-
-
-class InclusionMarker(Node):
-    """
-    Marker for indicating file inclusions
-    """
-
-    def __init__(self, filename):
-        super().__init__()
-        self.filename = filename
-        self._xmlType = "xi:include"
-
-    def get_xml_element(self, ext=None):
-        """
-        convert the node to an element tree description to dump as xml
-
-        Parameters
-        ----------
-        ext : str, optional
-            provide an extension to replace the one in the filename with, e.g.
-            '.xml'. Keeps the original if None. The default is None.
-
-        Returns
-        -------
-        xmlElement : ElementTree element
-            the alarm node as an ElementTree with appropriate children.
-        """
-        if ext is not None:
-            linkTarget = os.path.splitext(self.filename)[0]+ext
-        else:
-            linkTarget = self.filename
-        xmlAttributes = {"href": linkTarget,
-                         "xpointer": "element(/1/1)",
-                         "xmlns:xi": "http://www.w3.org/2001/XInclude"}
-        xmlElement = ET.Element(self._xmlType, attrib=xmlAttributes)
-        return xmlElement
 
 
 class AlarmTree(Tree):
@@ -414,6 +182,45 @@ class AlarmTree(Tree):
 
         return thisElement
 
+    def get_alh_lines(self, parentID=None, ext=None):
+        """
+        return the tree of all childeren of parentID as a list of alh lines
+
+        Parameters
+        ----------
+        parentID : string, optional
+            Identifier of the element to use as root. Use None to start at
+            the tree root. The default is None. The root node it self will not
+            be exported.
+        ext : string, optional
+            Extension to use for inlcuded files. None keeps the original
+            filenames. The default is None.
+
+        Returns
+        -------
+        thisElement : Element
+            An ElementTree Element with subelements representing this alarm
+            tree. Use to dump as xml
+
+        """
+        lineList = []
+        if parentID is None or parentID == self.root:
+            parentID = self.root
+            parentName = "NULL"
+        else:
+            parentNode = self.get_node(parentID)
+            parentName = parentNode.tag
+
+        for child in self.children(parentID):
+            childID = child.identifier
+            childLines = child.get_alh_lines(parent=parentName, ext=ext)
+            childLines.append("")
+            grandChildLines = self.get_alh_lines(childID, ext=ext)
+            lineList.extend(childLines)
+            lineList.extend(grandChildLines)
+
+        return lineList
+
     def write_xml(self, outputPath, forceXMLext=False):
         """
         write the alarm tree to an xml file readable by phoebus
@@ -438,6 +245,18 @@ class AlarmTree(Tree):
 
         with open(outputPath, "w") as outFile:
             outFile.write(prettyString)
+
+    def write_alh(self, outputPath, forceALHext=True):
+
+        if forceALHext:
+            ext = '.alh'
+        else:
+            ext = None
+
+        lineList = self.get_alh_lines(ext=ext)
+        with open(outputPath, "w") as outFile:
+            for line in lineList:
+                outFile.write("%s\n"%line)
 
 
 if __name__ == "__main__":
