@@ -12,7 +12,9 @@ from treelib.exceptions import DuplicatedNodeIdError
 
 import context
 import phoebusalarm.alhparser as alh
-from phoebusalarm.alarmtree import AlarmTree, AlarmPV
+from phoebusalarm.alarmtree import AlarmTree
+from phoebusalarm.alarmnodes import AlarmPV
+from phoebusalarm.alarmfilter import AlarmFilter
 
 
 class TestGuidance(unittest.TestCase):
@@ -150,32 +152,56 @@ class TestGroupFilter(unittest.TestCase):
         tree = alh.parse_alh(self.inPath, configName="Accelerator")
         alarms = [node for node in tree.all_nodes() if isinstance(node, AlarmPV)]
         for alarm in alarms:
-            self.assertEqual(alarm.filter, "(test:ai3<4) != 1")
+            self.assertEqual(alarm.filter.get_phoebus_filter(), "!(test:ai3<4)")
 
     def tearDown(self):
         os.remove(self.inPath)
 
 
-class TestFilterUpdate(unittest.TestCase):
+class TestForcePVCalc(unittest.TestCase):
     """Test the filter update function used for FORCEPV_CALC"""
-    baseStr = "({CALC})==1"  # first call should feed something like this
-    formulaStr = "({A}+{B}+{C})==1"  # after call with _CALC
-    argList = ["_CALC_A test:ai1", "_CALC_B test:ai2", "_CALC_C test:ai3"]
+
+    def setUp(self):
+        self.tree = AlarmTree("test")
+        self.node = self.tree.create_alarm("test:ai1")
+        self.node.filter = AlarmFilter(expr = "")
 
     def test_calc(self):
-        newStr = alh.update_filter(self.baseStr, "_CALC A+B+C")
-        self.assertEqual(newStr, self.formulaStr)
+        alhFragment = "CALC A+B<3"
+        alh.process_forcepvcalc(alhFragment, self.tree, self.node)
+        self.assertEqual(self.node.filter.expr, "A+B<3")
 
-    def test_single_subst(self):
-        newStr = alh.update_filter(self.formulaStr, "_CALC_A test:ai1")
-        self.assertEqual(newStr, "(test:ai1+{B}+{C})==1")
+    def test_letters(self):
+        argList = ["CALC_A test:ai1", "CALC_B test:ai2", "CALC_C test:ai3"]
+        for arg in argList:
+            alh.process_forcepvcalc(arg, self.tree, self.node)
 
-    def test_multiple_subst(self):
+        expectation = {"A":"test:ai1",
+                       "B":"test:ai2",
+                       "C":"test:ai3",
+                       "D":"",
+                       "E":"",
+                       "F":""}
+        self.assertDictEqual(self.node.filter.replacements, expectation)
 
-        for arg in self.argList:
-            self.formulaStr = alh.update_filter(self.formulaStr, arg)
-
-        self.assertEqual(self.formulaStr, "(test:ai1+test:ai2+test:ai3)==1")
+#    baseStr = "({CALC})==1"  # first call should feed something like this
+#    formulaStr = "({A}+{B}+{C})==1"  # after call with _CALC
+#    argList = ["_CALC_A test:ai1", "_CALC_B test:ai2", "_CALC_C test:ai3"]
+#
+#    def test_calc(self):
+#        newStr = alh.update_filter(self.baseStr, "_CALC A+B+C")
+#        self.assertEqual(newStr, self.formulaStr)
+#
+#    def test_single_subst(self):
+#        newStr = alh.update_filter(self.formulaStr, "_CALC_A test:ai1")
+#        self.assertEqual(newStr, "(test:ai1+{B}+{C})==1")
+#
+#    def test_multiple_subst(self):
+#
+#        for arg in self.argList:
+#            self.formulaStr = alh.update_filter(self.formulaStr, arg)
+#
+#        self.assertEqual(self.formulaStr, "(test:ai1+test:ai2+test:ai3)==1")
 
 
 if __name__ == '__main__':

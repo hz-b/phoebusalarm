@@ -36,7 +36,9 @@ import os
 
 from treelib.exceptions import DuplicatedNodeIdError
 
-from phoebusalarm.alarmtree import AlarmTree, AlarmPV
+from phoebusalarm.alarmtree import AlarmTree
+from phoebusalarm.alarmnodes import AlarmPV
+from phoebusalarm.alarmfilter import AlarmFilter
 
 
 class ParsingLogger(logging.Logger):
@@ -122,6 +124,7 @@ def parse_alh(filepath, configName="Accelerator", userDispatch=None):
                 "$SEVRCOMMAND": process_sevrcommand,
                 "$ALARMCOUNTFILTER": process_alarmcount,
                 "$FORCEPV": process_forcepv,
+                "$FORCEPV_CALC": process_forcepvcalc,
                 "$STATCOMMAND": process_statcommand,
                 "$HEARTBEATPV": process_heartbeat,
                 "$ACKPV": process_ignored,
@@ -153,9 +156,9 @@ def parse_alh(filepath, configName="Accelerator", userDispatch=None):
                     alhArgs = ""
 
                 # treat all FORCEPV keywords as one with different arguments
-                if "$FORCEPV" in keyword:
-                    extras = keyword.replace("$FORCEPV", "")
-                    keyword = "$FORCEPV"
+                if "$FORCEPV_CALC" in keyword:
+                    extras = keyword.replace("$FORCEPV_CALC", "CALC")
+                    keyword = "$FORCEPV_CALC"
                     alhArgs = " ".join((extras, alhArgs))
                 logger.debug("Keyword: %s, with args: %s", keyword, alhArgs)
                 # try to call the appropriate procces function
@@ -375,108 +378,51 @@ def process_beep(alhArgs, tree, currentNode, keyword, **kwargs):
 
 
 def process_forcepv(alhArgs, tree, currentNode, **kwargs):
-    # if not isinstance(currentNode, AlarmPV):
-    #     logger.error("Cannot parse forcePV for group %s, because Phoebus"
-    #                  " does not support forcePV/filter for groups",
-    #                  currentNode.tag)
-    #     return currentNode, None
-
     args = alhArgs.split()
 
-    if "_CALC" in args[0]:
-        filterStr = update_filter(currentNode.filter, alhArgs)
+    forcePV, forceValue, resetValue, forceEnables = get_forcepv_args(args)
+
+    if resetValue != "NE":
+        logger.warning("PV %s uses resetValue %s for force, "
+                       "phoebus filter will reset immidiately once "
+                       "forcePV != forceValue",
+                       currentNode.identifier, resetValue)
+
+    try:
+        nodeEnabled = currentNode.enabled
+    except AttributeError:    # nodes (groups) don't have enabled flag
+        nodeEnabled = True
+
+    if forceEnables == nodeEnabled:
+        logger.warning("Skipping forcePV without change in mask for PV %s",
+                       currentNode.identifier)
+        filterObj = ""
     else:
-        forcePV = args[0]
-        # handle calc like a special PV (will be changed in update_filter)
-        if forcePV == "CALC":
-            forcePV = "({CALC})"
-        forceMask = args[1]
-        try:
-            forceValue = args[2]
-        except IndexError:
-            forceValue = 1
-        try:
-            resetValue = args[3]
-        except IndexError:
-            resetValue = 0
+        currentNode.enabled = True
+        filterObj = create_alarm_filter(forcePV, forceValue, forceEnables)
 
-        # forcePV==forceValue disables alarm -> phoebus filter enables alarm
-        if ("C" in forceMask or "D" in forceMask):
-            try:
-                if currentNode.enabled:
-                    comp = "!="
-                else:
-                    comp = ""
-                    logger.warning("Skipping disable forcePV for disabled PV %s"
-                                   ", force mask: %s",
-                                   currentNode.identifier, forceMask)
-            except AttributeError:    # nodes (groups) don't have enabled flag
-                comp = "!="
-        # forcePV==forveValue enables alarm -> same as phoebus filter
-        else:
-            try:
-                if currentNode.enabled:
-                    comp = ""
-                    logger.warning("Skipping enable forcePV for enabled PV %s"
-                                   ", force mask: %s",
-                                   currentNode.identifier)
-                else:
-                    comp = "=="
-                    logger.debug("Enabling PV %s because it has force PV",
-                                 currentNode.identifier)
-                    currentNode.enabled
-            except AttributeError:
-                comp = "=="
-
-        if resetValue != "NE":
-            logger.warning("PV %s uses resetValue %s for force, "
-                           "phoebus filter will reset immidiately once "
-                           "forcePV != forceValue",
-                           currentNode.identifier, resetValue)
-        if comp:
-            filterStr = " ".join([forcePV, comp, forceValue])
-
-    currentNode.filter = filterStr
+    currentNode.filter = filterObj
 
     return currentNode, None
 
 
-def update_filter(filterString, alhArgs):
+def process_forcepvcalc(alhArgs, tree, currentNode, **kwargs):
     """
-    change the given filterSring based on the passed alh Arguments
-
-    Parameters
-    ----------
-    filterString : str
-        A string to use as filter with format place holders, e.g. ({CALC})==1.
-    alhArgs : str
-        The alh line after $FORCEPV, e.g. _CALC A+B.
-
-    Returns
-    -------
-    newfilterString : str
-        Filter string with update values.
-
+    handle all FORCEPV_CALC... statements
     """
 
     keyFragment, expr = alhArgs.split()
     key = keyFragment.split("_")[-1]  # everything after the last _ in the keyFrgament
 
-    replacementDict = {"A": "{A}",
-                       "B": "{B}",
-                       "C": "{C}",
-                       "D": "{D}",
-                       "E": "{E}",
-                       "F": "{F}"}
+    try:
+        if key == "CALC":
+            currentNode.filter.expr = expr
+        else:
+            currentNode.filter.replacements.update({key: expr})
+    except AttributeError:
+        logger.error("missing filter object for %s",currentNode.identifier)
 
-    if key == "CALC":
-        for char, fmt in replacementDict.items():
-            expr = expr.replace(char, fmt)  # inefficient, lots of new strings
-
-    replacementDict[key] = expr
-    newfilterString = filterString.format(**replacementDict)
-
-    return newfilterString
+    return currentNode, None
 
 
 def process_heartbeat(alhArgs, tree, currentNode, **kwargs):
@@ -498,6 +444,40 @@ def propagate_filter(tree, parentId, currentNode):
                      currentNode.identifier, filterStr, parentNode.identifier)
     except AttributeError:
         pass
+
+
+def get_forcepv_args(args):
+    forcePV = args[0]
+    forceMask = args[1]
+    try:
+        forceValue = float(args[2])
+    except IndexError:
+        forceValue = 1
+    try:
+        resetValue = args[3]
+    except IndexError:
+        resetValue = 0
+
+    forceEnables = not ("C" in forceMask or "D" in forceMask)
+    print(forceEnables)
+
+    return (forcePV, forceValue, resetValue, forceEnables)
+
+
+def create_alarm_filter(forcePV, forceValue, filterEnables):
+    if forcePV == "CALC":
+        if forceValue in (0, 1):
+            filterEnables = bool(forceValue) == filterEnables
+            filterObj = AlarmFilter(expr="", enabling=filterEnables)
+        else:
+            logger.error("ForceValue must be 0 or 1, for CALC in pheobus")
+            filterObj = ""
+
+    else:
+        filterObj = AlarmFilter(expr = forcePV, value=forceValue,
+                                enabling=filterEnables)
+
+    return filterObj
 
 
 def command_name(commandString):
