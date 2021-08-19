@@ -39,6 +39,7 @@ Example Usage:
 
 """
 
+from operator import attrgetter
 import xml.etree.ElementTree as ET
 import xml.dom.minidom as minidom
 
@@ -62,7 +63,7 @@ class AlarmTree(Tree):
         if configName:
             super().create_node(tag=configName, identifier=configName)
 
-    def create_node(self, name, parent=None, tag=None):
+    def create_node(self, name, parent=None, tag=None, sortKey=0):
         """
         create an AlarmNode and add it to the tree
 
@@ -77,6 +78,8 @@ class AlarmTree(Tree):
             An alternate description of the node.
             Not exported to xml. Used as GroupName in alh.
             The default is tag=name.
+        sortKey : float, optional
+            A value to sort the nodes by in the output
 
         Returns
         -------
@@ -92,12 +95,13 @@ class AlarmTree(Tree):
             pid = self.root
 
         identifier = pid+"/"+name
-        alarmNode = AlarmNode(name=name, identifier=identifier, tag=tag)
+        alarmNode = AlarmNode(name=name, identifier=identifier, tag=tag,
+                              sortKey=sortKey)
         self.add_node(alarmNode, pid)
 
         return alarmNode
 
-    def create_alarm(self, channelPV, parent=None):
+    def create_alarm(self, channelPV, parent=None, sortKey=0):
         """
         create and AlarmPV and add it to the tree
 
@@ -108,6 +112,8 @@ class AlarmTree(Tree):
         parent : Node or identifier string, optional
             The parent to add this to. The root element is used when None.
             The default is None.
+        sortKey : float, optional
+            A value to sort the nodes by in the output
 
         Returns
         -------
@@ -118,11 +124,11 @@ class AlarmTree(Tree):
         if parent is None:
             parent = self.root
 
-        alarmPV = AlarmPV(channelPV)
+        alarmPV = AlarmPV(channelPV, sortKey=sortKey)
         self.add_node(alarmPV, parent)
         return alarmPV
 
-    def create_inclusion(self, filename, parent=None):
+    def create_inclusion(self, filename, parent=None, sortKey=0):
         """
         create and inclusionMarker and add it to the tree
 
@@ -133,6 +139,8 @@ class AlarmTree(Tree):
         parent : TYPE, optional
             The parent to add this to. The root element is used when None.
             The default is None.
+        sortKey : float, optional
+            A value to sort the nodes by in the output
 
         Returns
         -------
@@ -142,7 +150,7 @@ class AlarmTree(Tree):
         """
         if parent is None:
             parent = self.root
-        inclusionNode = InclusionMarker(filename)
+        inclusionNode = InclusionMarker(filename, sortKey=sortKey)
         self.add_node(inclusionNode, parent)
         return inclusionNode
 
@@ -175,7 +183,7 @@ class AlarmTree(Tree):
             thisNode = self.get_node(rootID)
             thisElement = thisNode.get_xml_element(ext=ext)
 
-        for child in self.children(rootID):
+        for child in sorted(self.children(rootID), key=attrgetter('sortKey')):
             childID = child.identifier
             childElement = self.get_element_tree(childID, ext=ext)
             thisElement.append(childElement)
@@ -211,7 +219,7 @@ class AlarmTree(Tree):
             parentNode = self.get_node(parentID)
             parentName = parentNode.tag
 
-        for child in self.children(parentID):
+        for child in sorted(self.children(parentID), key=attrgetter('sortKey')):
             childID = child.identifier
             childLines = child.get_alh_lines(parent=parentName, ext=ext)
             childLines.append("")

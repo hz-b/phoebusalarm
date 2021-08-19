@@ -55,11 +55,6 @@ class TestEndToEnd(unittest.TestCase):
         group1_1.add_command("run command", "/home/iocuser/test.sh")
         group1_1.add_mail("group1_1@phoebus_test.de", delay=60)
         # add some PVs
-        pv1 = self.alarmTree.create_alarm("test:ai1", parent=group1_1)
-        pv1.desc = "First Alarm PV"
-        pv1.enable = True
-        pv1.latch = True
-        pv1.annunciate = True
 
         pv2 = self.alarmTree.create_alarm("test:ai2", parent=group1_1)
         pv2.desc = "Second Alarm PV"
@@ -67,8 +62,19 @@ class TestEndToEnd(unittest.TestCase):
         pv2.latch = True
         pv2.annunciate = True
         pv2.delay = 5
+        pv2.sortKey = 2
 
         pv2.add_filter(expr="A<3", replaceDict={"A":"test:ai1"})
+
+
+        pv1 = self.alarmTree.create_alarm("test:ai1", parent=group1_1)
+        pv1.desc = "First Alarm PV"
+        pv1.enable = True
+        pv1.latch = True
+        pv1.annunciate = True
+        pv1.sortKey = 1
+
+
 
         # another subgroup
         group1_2 = self.alarmTree.create_node("Group1_2", parent=group1)

@@ -46,7 +46,7 @@ class AlarmNode(Node):
     """
     Representation of an alarm tree node
     """
-    def __init__(self, name, identifier=None, tag=None):
+    def __init__(self, name, identifier=None, tag=None, sortKey=0):
         """
         Constructor
 
@@ -60,6 +60,8 @@ class AlarmNode(Node):
         tag : string, optional
             An alternative tag of the node. Not exported to xml.
             The default is None, which sets tag=name.
+        sortKey : float, optional
+            A key to sort the nodes/pvs by. The default is insertion order
         """
         if tag is None:
             tag = name
@@ -69,6 +71,7 @@ class AlarmNode(Node):
         self.commands = []
         self.displays = []
         self.actions = []
+        self.sortKey = sortKey
         self._xmlType = "component"
         self._name = name
 
@@ -229,8 +232,8 @@ class AlarmPV(AlarmNode):
     """
     Representation of an alarm PV
     """
-    def __init__(self, channelPV):
-        super().__init__(name=channelPV, identifier=channelPV)
+    def __init__(self, channelPV, **kwargs):
+        super().__init__(name=channelPV, identifier=channelPV, **kwargs)
         self.desc = ""
         self.enabled = True
         self.latch = True
@@ -329,9 +332,10 @@ class InclusionMarker(Node):
     Marker for indicating file inclusions
     """
 
-    def __init__(self, filename):
+    def __init__(self, filename, sortKey=0):
         super().__init__()
         self.filename = filename
+        self.sortKey = sortKey
         self._xmlType = "xi:include"
 
     def get_xml_element(self, ext=None):
