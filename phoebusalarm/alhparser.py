@@ -357,8 +357,8 @@ def process_command(alhArgs, tree, currentNode, **kwargs):
 
 def process_alarmcount(alhArgs, tree, currentNode, **kwargs):
     count, time = alhArgs.split()
-    currentNode.count = count
-    currentNode.delay = time
+    currentNode.count = int(count)
+    currentNode.delay = int(time)
     return currentNode, None
 
 
