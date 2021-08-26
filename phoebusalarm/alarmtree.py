@@ -233,6 +233,31 @@ class AlarmTree(Tree):
 
         return lineList
 
+    def get_xml_string(self, forceXMLext=False):
+        """get the tree as an xml string"""
+        if forceXMLext:
+            ext = '.xml'
+        else:
+            ext = None
+
+        # get elements and make a pretty xml
+        rootElement = self.get_element_tree(ext=ext)
+        roughString = ET.tostring(rootElement, 'utf-8')
+        reparsed = minidom.parseString(roughString)
+        prettyString = reparsed.toprettyxml(indent="  ")
+        return prettyString
+
+    def get_alh_string(self, forceALHext=True):
+        """get the tree as alarm handler string"""
+        if forceALHext:
+            ext = '.alh'
+        else:
+            ext = None
+
+        lineList = self.get_alh_lines(ext=ext)
+
+        return "\n".join(lineList)
+
     def write_xml(self, outputPath, forceXMLext=False):
         """
         write the alarm tree to an xml file readable by phoebus
@@ -244,31 +269,23 @@ class AlarmTree(Tree):
         forceXMLext : Bool, optional
             Force inlcude file extensions to '.xml'. The default is False.
         """
-        if forceXMLext:
-            ext = '.xml'
-        else:
-            ext = None
-
-        # get elements and make a pretty xml
-        rootElement = self.get_element_tree(ext=ext)
-        roughString = ET.tostring(rootElement, 'utf-8')
-        reparsed = minidom.parseString(roughString)
-        prettyString = reparsed.toprettyxml(indent="  ")
 
         with open(outputPath, "w") as outFile:
-            outFile.write(prettyString)
+            outFile.write(self.get_xml_string(forceXMLext))
 
     def write_alh(self, outputPath, forceALHext=True):
+        """
+        write the alarm tree as an alh file compatible with the alarm handler
 
-        if forceALHext:
-            ext = '.alh'
-        else:
-            ext = None
-
-        lineList = self.get_alh_lines(ext=ext)
+        Parameters
+        ----------
+        outputPath : file path
+            file to write to.
+        forceALHext : Bool, optional
+            Force inlcude file extensions to '.alh'. The default is True.
+        """
         with open(outputPath, "w") as outFile:
-            for line in lineList:
-                outFile.write("%s\n"%line)
+            outFile.write(self.get_alh_string(forceALHext))
 
 
 if __name__ == "__main__":
