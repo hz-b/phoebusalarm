@@ -42,20 +42,42 @@ class TestAlarmNode(unittest.TestCase):
         self.assertEqual(xml.tag, "component")
         self.assertEqual(xml.attrib["name"], self.name)
 
-    def test_display(self):
+    def test_display_abs_path(self):
+        macros = {"DEV":42,"A":"some thing"}
+
+        self.alarmNode.add_display("title",
+                                   "/path/to/display.bob",
+                                   macros)
+        self.assertEqual(self.alarmNode.displays[0].details,
+                         r"file:///path/to/display.bob?DEV=42&A=some+thing")
+
+    def test_display_url(self):
+        macros = {"DEV":42,"A":"some thing"}
+
+        self.alarmNode.add_display("title",
+                                   "file:///path/to/display.bob",
+                                   macros)
+        self.assertEqual(self.alarmNode.displays[0].details,
+                         "file:///path/to/display.bob?DEV=42&A=some+thing")
+
+    def test_display_url_with_query(self):
+        macros = {"DEV":42,"A":"some thing"}
+
+        self.alarmNode.add_display("title",
+                                   "file:///path/to/display.bob?DEV=7&B=some+other+thing",
+                                   macros)
+        self.assertEqual(self.alarmNode.displays[0].details,
+                         "file:///path/to/display.bob?DEV=7&B=some+other+thing")
+
+
+    def test_display_filename(self):
         macros = {"DEV":42,"A":"some thing"}
 
         with self.assertRaises(ValueError):
-            self.alarmNode.add_display("blubb",
-                                       "/path/not/url/display.bob",
-                                       macros)
+            self.alarmNode.add_display("blubb", "display.bob", macros)
 
-        self.alarmNode.add_display("title",
-                                   r"file:///path/to/display.bob",
-                                   macros)
-        self.assertEqual(self.alarmNode.displays[0].details,
-                         r"file:///path/to/display.bob?DEV=42?A=some+thing")
-
+        self.alarmNode.add_display("title", "display.bob")
+        self.assertEqual(self.alarmNode.displays[0].details, "display.bob")
 
 class TestAlarmNodeAlh(unittest.TestCase):
     """
@@ -98,9 +120,9 @@ class TestAlarmNodeAlh(unittest.TestCase):
 
     def test_display(self):
         self.alarmNode.add_display("irrelevant title",
-                                   "file:///some/path/to/display.bob?MACRO=3")
+                                   "file:///some/path/to/display.bob?PV=test%3Aai1&B=some+other+thing")
         expectation = ["GROUP parent Name",
-                       "$COMMAND run_edm.sh -m MACRO=3 display.edl"]
+                       '$COMMAND run_edm.sh -m "PV=test:ai1,B=some other thing" display.edl']
         self.assert_expected_alh(expectation)
 
     def test_action(self):

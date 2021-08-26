@@ -28,7 +28,7 @@ from collections import namedtuple, OrderedDict
 from itertools import chain
 import os
 import re
-from urllib.parse import quote_plus as url_quote_plus
+import urllib.parse
 import xml.etree.ElementTree as ET
 
 from treelib import Node
@@ -120,16 +120,19 @@ class AlarmNode(Node):
             Beware, path must be a valid URL if passing macros.
         """
         if macros is not None:
-            urlRegex = re.compile(r"(file:///|http[s]*://)[\S]*\.bob$")
-            if not urlRegex.match(path):
-                raise ValueError("not a valid url: {disp}".format(disp=path))
+            if not isinstance(macros, dict):
+                raise TypeError("Macros must be passed as dict")
+            parseResult = urllib.parse.urlparse(path, scheme="file")
 
-            urlComponents = [path]
-            for key in macros:
-                val = url_quote_plus(str(macros[key]))
-                urlComponents.append("{key}={val}".format(key=key, val=val))
+            if not parseResult.path.startswith("/"):
+                raise ValueError("absolute path required to use macros "
+                                 + parseResult.path)
 
-            url = "?".join(urlComponents)
+            if not parseResult.query:
+                queryStr = urllib.parse.urlencode(macros)
+                parseResult = parseResult._replace(query=queryStr)
+
+            url = urllib.parse.urlunparse(parseResult)
         else:
             url = path
 

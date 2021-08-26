@@ -20,6 +20,7 @@ A collection of functions to support alh export functionality of the alarmtree
 """
 
 import os
+import urllib.parse
 import warnings
 
 #module wide settings
@@ -46,23 +47,21 @@ def format_action(action, delay):
 
 def format_display(display):
     if ".bob" in display:
-        filePath, *macroList = display.split("?")
+        parseResult = urllib.parse.urlparse(display)
 
-        path, fileName = os.path.split(filePath)
+        path, fileName = os.path.split(parseResult.path)
         edlName = fileName.replace(".bob", ".edl")
 
-        if macroList:
-            macroStr = "-m "+",".join(macroList)
-        else:
-            macroStr = ""
+        macroStr = ""
+        if parseResult.query:
+            macroDict = urllib.parse.parse_qs(parseResult.query)
+            pairList = [key + "=" + macroDict[key][0] for key in macroDict]
+            macroStr = '-m "'+','.join(pairList)+'"'
 
-        cmd = "{edm} {macros} {file}".format(edm=EDM_COMMAND,
-                                             macros=macroStr,
-                                             file=edlName)
+        cmd = " ".join(filter(None, [EDM_COMMAND, macroStr, edlName]))
         line = "$COMMAND {cmd}".format(cmd=cmd)
     else:
         line = "$GUIDANCE {url}".format(url=display)
-
     return line
 
 def make_mask(enabled, latch):
