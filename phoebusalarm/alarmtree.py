@@ -40,6 +40,7 @@ Example Usage:
 """
 
 from operator import attrgetter
+import warnings
 import xml.etree.ElementTree as ET
 import xml.dom.minidom as minidom
 
@@ -218,6 +219,9 @@ class AlarmTree(Tree):
         else:
             parentNode = self.get_node(parentID)
             parentName = parentNode.tag
+
+        if parentID == self.root and len(self.children(parentID)) > 1:
+            warnings.warn("creating invalid alh, alarm tree has more than one top group")
 
         for child in sorted(self.children(parentID), key=attrgetter('sortKey')):
             childID = child.identifier

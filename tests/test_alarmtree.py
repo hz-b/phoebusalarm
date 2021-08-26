@@ -27,9 +27,15 @@ class TestAlarmTree(unittest.TestCase):
         node2 = tree.create_node("Group2")
         node3 = tree.create_node("SubGroup", parent=node1)
         node4 = tree.create_node("SubGroup", parent=node2)
-        self.assertRaises(DuplicatedNodeIdError, tree.create_node,
-                          "SubGroup", parent=node2)
+        with self.assertRaises(DuplicatedNodeIdError):
+            tree.create_node("SubGroup", parent=node2)
 
+    def test_alhWarning(self):
+        tree = AlarmTree(configName="Test")
+        tree.create_node("Group1")
+        tree.create_node("Group2")
+        with self.assertWarns(Warning):
+            tree.get_alh_lines()
 
 
 class TestEndToEnd(unittest.TestCase):
