@@ -98,17 +98,17 @@ class TestParents(unittest.TestCase):
         self.assertIsNone(parentID)
 
     def test_simple(self):
-        self.node = self.tree.create_node("Group1")
-        parentID = alh.find_parent(self.tree, self.node, "Group1")
-        self.assertEqual(parentID, self.node.identifier)
+        node = self.tree.create_node("Group1")
+        parentID = alh.find_parent(self.tree, node, "Group1")
+        self.assertEqual(parentID, node.identifier)
 
     def test_deep(self):
-        self.node0 = self.tree.create_node(name="Group1")
-        self.node1 = self.tree.create_node(name="Group2", parent=self.node0)
-        self.node2 = self.tree.create_node(name="Group3", parent=self.node1)
-        self.node3 = self.tree.create_node(name="Group4", parent=self.node2)
-        parentID = alh.find_parent(self.tree, self.node3, "Group2")
-        self.assertEqual(parentID, self.node1.identifier)
+        node0 = self.tree.create_node(name="Group1")
+        node1 = self.tree.create_node(name="Group2", parent=node0)
+        node2 = self.tree.create_node(name="Group3", parent=node1)
+        node3 = self.tree.create_node(name="Group4", parent=node2)
+        parentID = alh.find_parent(self.tree, node3, "Group2")
+        self.assertEqual(parentID, node1.identifier)
 
 
 class TestFilterPropagation(unittest.TestCase):
@@ -164,7 +164,7 @@ class TestForcePVCalc(unittest.TestCase):
     def setUp(self):
         self.tree = AlarmTree("test")
         self.node = self.tree.create_alarm("test:ai1")
-        self.node.filter = AlarmFilter(expr = "")
+        self.node.filter = AlarmFilter(expr="")
 
     def test_calc(self):
         alhFragment = "CALC A+B<3"

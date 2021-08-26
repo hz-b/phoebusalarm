@@ -49,7 +49,7 @@ def format_display(display):
     if ".bob" in display:
         parseResult = urllib.parse.urlparse(display)
 
-        path, fileName = os.path.split(parseResult.path)
+        fileName = os.path.split(parseResult.path)[1]
         edlName = fileName.replace(".bob", ".edl")
 
         macroStr = ""

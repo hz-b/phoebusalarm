@@ -7,8 +7,9 @@ ToDo:
 
 import os
 import unittest
-from treelib.exceptions import DuplicatedNodeIdError
 import xml.etree.ElementTree as ET
+
+from treelib.exceptions import DuplicatedNodeIdError
 
 import context
 from phoebusalarm.alarmtree import AlarmTree

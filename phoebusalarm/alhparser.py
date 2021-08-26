@@ -420,7 +420,7 @@ def process_forcepvcalc(alhArgs, tree, currentNode, **kwargs):
         else:
             currentNode.filter.replacements.update({key: expr})
     except AttributeError:
-        logger.error("missing filter object for %s",currentNode.identifier)
+        logger.error("missing filter object for %s", currentNode.identifier)
 
     return currentNode, None
 
@@ -474,7 +474,7 @@ def create_alarm_filter(forcePV, forceValue, filterEnables):
             filterObj = ""
 
     else:
-        filterObj = AlarmFilter(expr = forcePV, value=forceValue,
+        filterObj = AlarmFilter(expr=forcePV, value=forceValue,
                                 enabling=filterEnables)
 
     return filterObj

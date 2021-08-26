@@ -43,7 +43,7 @@ class TestAlarmNode(unittest.TestCase):
         self.assertEqual(xml.attrib["name"], self.name)
 
     def test_display_abs_path(self):
-        macros = {"DEV":42,"A":"some thing"}
+        macros = {"DEV":42, "A":"some thing"}
 
         self.alarmNode.add_display("title",
                                    "/path/to/display.bob",
@@ -52,7 +52,7 @@ class TestAlarmNode(unittest.TestCase):
                          r"file:///path/to/display.bob?DEV=42&A=some+thing")
 
     def test_display_url(self):
-        macros = {"DEV":42,"A":"some thing"}
+        macros = {"DEV":42, "A":"some thing"}
 
         self.alarmNode.add_display("title",
                                    "file:///path/to/display.bob",
@@ -61,7 +61,7 @@ class TestAlarmNode(unittest.TestCase):
                          "file:///path/to/display.bob?DEV=42&A=some+thing")
 
     def test_display_url_with_query(self):
-        macros = {"DEV":42,"A":"some thing"}
+        macros = {"DEV":42, "A":"some thing"}
 
         self.alarmNode.add_display("title",
                                    "file:///path/to/display.bob?DEV=7&B=some+other+thing",
@@ -71,7 +71,7 @@ class TestAlarmNode(unittest.TestCase):
 
 
     def test_display_filename(self):
-        macros = {"DEV":42,"A":"some thing"}
+        macros = {"DEV":42, "A":"some thing"}
 
         with self.assertRaises(ValueError):
             self.alarmNode.add_display("blubb", "display.bob", macros)
@@ -105,13 +105,13 @@ class TestAlarmNodeAlh(unittest.TestCase):
         self.assert_expected_alh(expectation)
 
     def test_command(self):
-        self.alarmNode.add_command("irrelevant title","run.sh -o blubb.txt")
+        self.alarmNode.add_command("irrelevant title", "run.sh -o blubb.txt")
         expectation = ["GROUP parent Name",
                        "$COMMAND run.sh -o blubb.txt"]
         self.assert_expected_alh(expectation)
 
     def test_guidance(self):
-        self.alarmNode.add_guidance("irrelevant title","important alarm")
+        self.alarmNode.add_guidance("irrelevant title", "important alarm")
         expectation = ["GROUP parent Name",
                        "$GUIDANCE",
                        "important alarm",
@@ -128,11 +128,11 @@ class TestAlarmNodeAlh(unittest.TestCase):
     def test_action(self):
         expectation = ["GROUP parent Name",
                        "$SEVRCOMMAND UP_ANY do_something.sh blubb"]
-        self.alarmNode.add_auto_action("title",0,"do_something.sh blubb")
+        self.alarmNode.add_auto_action("title", 0, "do_something.sh blubb")
         self.assert_expected_alh(expectation)
 
         with self.assertWarns(Warning):
-            self.alarmNode.add_auto_action("title",1,"do_something.sh blubb")
+            self.alarmNode.add_auto_action("title", 1, "do_something.sh blubb")
             self.assert_expected_alh(expectation+[""])
 
 

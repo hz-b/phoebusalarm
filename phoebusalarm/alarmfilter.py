@@ -40,15 +40,15 @@ class AlarmFilter():
         A : str, optional
             PV to use vor A. The default is "".
         B : str, optional
-            PV to use vor B.. The default is "".
+            PV to use vor B. The default is "".
         C : str, optional
-            PV to use vor C.. The default is "".
+            PV to use vor C. The default is "".
         D : str, optional
-            PV to use vor D.. The default is "".
+            PV to use vor D. The default is "".
         E : str, optional
-            PV to use vor E.. The default is "".
+            PV to use vor E. The default is "".
         F : str, optional
-            PV to use vor F.. The default is "".
+            PV to use vor F. The default is "".
         enabling : bool, optional
             Toggle if the expression should enable or diable the alarm.
             The default is True, which means expr=True -> alarm on. This is
