@@ -3,11 +3,21 @@
 Test the individual alarm nodes
 """
 
+from operator import attrgetter
 import unittest
 import xml.etree.ElementTree as ET
 
 import context
 from phoebusalarm.alarmnodes import (AlarmNode, AlarmPV, InclusionMarker)
+
+class TestOrdering(unittest.TestCase):
+    def test_string_int(self):
+        alarm0 = AlarmPV("test:pv1", sortKey="A")
+        alarm1 = AlarmPV("test:pv1", sortKey=1)
+        alarm2 = AlarmPV("test:pv2", sortKey="a")
+        alarm3 = AlarmPV("test:pv3", sortKey=1.0e-1)
+        sortedList = sorted([alarm0, alarm1, alarm2, alarm3], key=attrgetter('sortKey'))
+        self.assertListEqual(sortedList, [alarm3, alarm1, alarm0, alarm2])
 
 class TestInclusionMarker(unittest.TestCase):
     """

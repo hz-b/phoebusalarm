@@ -27,7 +27,6 @@ Currently there are:
 from collections import namedtuple, OrderedDict
 from itertools import chain
 import os
-import re
 import urllib.parse
 import xml.etree.ElementTree as ET
 
@@ -74,6 +73,14 @@ class AlarmNode(Node):
         self.sortKey = sortKey
         self._xmlType = "component"
         self._name = name
+
+    @property
+    def sortKey(self):
+        return self._sortKey
+
+    @sortKey.setter
+    def sortKey(self, newKey):
+        self._sortKey = str(newKey)
 
     def add_guidance(self, title, details):
         """
@@ -340,6 +347,14 @@ class InclusionMarker(Node):
         self.filename = filename
         self.sortKey = sortKey
         self._xmlType = "xi:include"
+
+    @property
+    def sortKey(self):
+        return self._sortKey
+
+    @sortKey.setter
+    def sortKey(self, newKey):
+        self._sortKey = str(newKey)
 
     def get_xml_element(self, ext=None):
         """
