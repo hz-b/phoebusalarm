@@ -13,7 +13,7 @@ from treelib.exceptions import DuplicatedNodeIdError
 
 import context
 from phoebusalarm.alarmtree import AlarmTree
-
+from phoebusalarm.alarmnodes import AlarmNode
 
 
 
@@ -31,12 +31,21 @@ class TestAlarmTree(unittest.TestCase):
         with self.assertRaises(DuplicatedNodeIdError):
             tree.create_node("SubGroup", parent=node2)
 
-    def test_alhWarning(self):
+    def test_alh_warning(self):
         tree = AlarmTree(configName="Test")
         tree.create_node("Group1")
         tree.create_node("Group2")
         with self.assertWarns(Warning):
             tree.get_alh_lines()
+
+    def test_default_root(self):
+        tree = AlarmTree()
+        alarm = tree.create_alarm("testpv")
+
+        self.assertIsNotNone(tree.root)
+        self.assertIsNotNone(tree.parent(alarm.identifier))
+        self.assertIsNot(tree.get_node(tree.root), alarm)
+        self.assertIsNot(type(tree.get_node(tree.root)),type(alarm))
 
 
 class TestEndToEnd(unittest.TestCase):

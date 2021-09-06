@@ -123,7 +123,11 @@ class AlarmTree(Tree):
 
         """
         if parent is None:
-            parent = self.root
+            if self.root:
+                parent = self.root
+            else:
+                super().create_node(tag="Accelerator", identifier="Accelerator")
+                parent = self.root
 
         alarmPV = AlarmPV(channelPV, sortKey=sortKey)
         self.add_node(alarmPV, parent)
