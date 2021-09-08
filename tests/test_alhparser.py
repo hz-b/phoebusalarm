@@ -157,6 +157,17 @@ class TestGroupFilter(unittest.TestCase):
     def tearDown(self):
         os.remove(self.inPath)
 
+class TestForcePV(unittest.TestCase):
+    """Test simple forcePV"""
+    def setUp(self):
+        self.tree = AlarmTree("test")
+        self.node = self.tree.create_alarm("test:ai1")
+
+    def test_force(self):
+        alh.process_forcepv("test:filter1 CD-T- 4 NE", self.tree, self.node)
+        self.assertEqual(self.node.filter.value, 4)
+        self.assertEqual(self.node.filter.expr, "test:filter1")
+
 
 class TestForcePVCalc(unittest.TestCase):
     """Test the filter update function used for FORCEPV_CALC"""
@@ -164,12 +175,13 @@ class TestForcePVCalc(unittest.TestCase):
     def setUp(self):
         self.tree = AlarmTree("test")
         self.node = self.tree.create_alarm("test:ai1")
-        self.node.filter = AlarmFilter(expr="")
+        alh.process_forcepv("CALC CD-T- 1 NE", self.tree, self.node)
 
     def test_calc(self):
         alhFragment = "CALC A+B<3"
         alh.process_forcepvcalc(alhFragment, self.tree, self.node)
         self.assertEqual(self.node.filter.expr, "A+B<3")
+
 
     def test_letters(self):
         argList = ["CALC_A test:ai1", "CALC_B test:ai2", "CALC_C test:ai3"]
@@ -184,24 +196,12 @@ class TestForcePVCalc(unittest.TestCase):
                        "F":""}
         self.assertDictEqual(self.node.filter.replacements, expectation)
 
-#    baseStr = "({CALC})==1"  # first call should feed something like this
-#    formulaStr = "({A}+{B}+{C})==1"  # after call with _CALC
-#    argList = ["_CALC_A test:ai1", "_CALC_B test:ai2", "_CALC_C test:ai3"]
-#
-#    def test_calc(self):
-#        newStr = alh.update_filter(self.baseStr, "_CALC A+B+C")
-#        self.assertEqual(newStr, self.formulaStr)
-#
-#    def test_single_subst(self):
-#        newStr = alh.update_filter(self.formulaStr, "_CALC_A test:ai1")
-#        self.assertEqual(newStr, "(test:ai1+{B}+{C})==1")
-#
-#    def test_multiple_subst(self):
-#
-#        for arg in self.argList:
-#            self.formulaStr = alh.update_filter(self.formulaStr, arg)
-#
-#        self.assertEqual(self.formulaStr, "(test:ai1+test:ai2+test:ai3)==1")
+    def test_non01_val(self):
+        alh.process_forcepv("CALC CD-T- 4 NE", self.tree, self.node)
+        argList = ["CALC A+B", "CALC_A test:ai1", "CALC_B test:ai2"]
+        for arg in argList:
+            alh.process_forcepvcalc(arg, self.tree, self.node)
+        self.assertEqual(self.node.filter.expr, "A+B=4")
 
 
 if __name__ == '__main__':

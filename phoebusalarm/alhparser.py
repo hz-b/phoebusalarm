@@ -416,7 +416,7 @@ def process_forcepvcalc(alhArgs, tree, currentNode, **kwargs):
 
     try:
         if key == "CALC":
-            currentNode.filter.expr = expr
+            currentNode.filter.expr = currentNode.filter.expr.format(expr=expr)
         else:
             currentNode.filter.replacements.update({key: expr})
     except AttributeError:
@@ -450,7 +450,10 @@ def get_forcepv_args(args):
     forcePV = args[0]
     forceMask = args[1]
     try:
-        forceValue = float(args[2])
+        try:
+            forceValue = int(args[2])
+        except ValueError:
+            forceValue = float(args[2])
     except IndexError:
         forceValue = 1
     try:
@@ -459,7 +462,6 @@ def get_forcepv_args(args):
         resetValue = 0
 
     forceEnables = not ("C" in forceMask or "D" in forceMask)
-    print(forceEnables)
 
     return (forcePV, forceValue, resetValue, forceEnables)
 
@@ -468,10 +470,12 @@ def create_alarm_filter(forcePV, forceValue, filterEnables):
     if forcePV == "CALC":
         if forceValue in (0, 1):
             filterEnables = bool(forceValue) == filterEnables
-            filterObj = AlarmFilter(expr="", enabling=filterEnables)
+            filterObj = AlarmFilter(expr="{expr}", enabling=filterEnables)
         else:
-            logger.error("ForceValue must be 0 or 1, for CALC in pheobus")
-            filterObj = ""
+            filterObj = AlarmFilter(expr="{{expr}}={val}".format(val=forceValue),
+                                    enabling=filterEnables)
+#            logger.error("ForceValue must be 0 or 1, for CALC in pheobus")
+#            filterObj = ""
 
     else:
         filterObj = AlarmFilter(expr=forcePV, value=forceValue,
