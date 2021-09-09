@@ -472,7 +472,7 @@ def create_alarm_filter(forcePV, forceValue, filterEnables):
             filterEnables = bool(forceValue) == filterEnables
             filterObj = AlarmFilter(expr="{expr}", enabling=filterEnables)
         else:
-            filterObj = AlarmFilter(expr="{{expr}}={val}".format(val=forceValue),
+            filterObj = AlarmFilter(expr="({{expr}})={val}".format(val=forceValue),
                                     enabling=filterEnables)
 #            logger.error("ForceValue must be 0 or 1, for CALC in pheobus")
 #            filterObj = ""
