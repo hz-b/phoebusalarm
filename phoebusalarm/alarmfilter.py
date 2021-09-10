@@ -89,7 +89,7 @@ class AlarmFilter():
         if self.value is None:
             lines = ["$FORCEPV CALC {mask} {val} NE".format(mask=forceMask, val=1),
                      "$FORCEPV_CALC {expr}".format(expr=self.expr)]
-            for key, pv in self.replacements.items():
+            for key, pv in sorted(self.replacements.items()):
                 if pv:
                     line = "$FORCEPV_CALC_{key} {pv}".format(key=key, pv=pv)
                     lines.append(line)
