@@ -1,5 +1,6 @@
 from setuptools import setup, find_packages
 import os
+import versioneer
 
 this_directory = os.path.split(os.path.abspath(__file__))[0]
 
@@ -9,8 +10,9 @@ with open(os.path.join(this_directory, "README.md"), "r") as readme:
 setup(
     name='phoebusalarm',
     python_requires='>=3.5',
-    version='1.0.1',
-    description='Python Utilities for Pheobus',
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass(),
+    description='Python Utilities for Phoebus',
     long_description=long_description,
     long_description_content_type='text/markdown',
     author='Malte Gotz',
