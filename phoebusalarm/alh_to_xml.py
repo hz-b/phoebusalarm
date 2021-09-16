@@ -131,7 +131,7 @@ def alh_to_xml():
         logLevel = logging.DEBUG
         fmt = "%(name)s: %(levelname)s: %(message)s"
 
-    logging.basicConfig(format=fmt, level=logLevel, force=True)
+    logging.basicConfig(format=fmt, level=logLevel)
 
     inputPath = os.path.abspath(args.input)
     inputDir, inputName = os.path.split(inputPath)
