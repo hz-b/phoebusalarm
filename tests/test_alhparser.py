@@ -110,6 +110,14 @@ class TestParents(unittest.TestCase):
         parentID = alh.find_parent(self.tree, node3, "Group2")
         self.assertEqual(parentID, node1.identifier)
 
+    def test_not_found(self):
+        node0 = self.tree.create_node(name="Group1")
+        node1 = self.tree.create_node(name="Group2", parent=node0)
+        node2 = self.tree.create_node(name="Group3", parent=node1)
+        node3 = self.tree.create_node(name="Group4", parent=node2)
+        with self.assertRaises(alh.MalformedAlh):
+            alh.find_parent(self.tree, node3, "Group_2")
+
 
 class TestFilterPropagation(unittest.TestCase):
     filterStr = "test>5"

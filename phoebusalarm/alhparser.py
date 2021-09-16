@@ -40,6 +40,8 @@ from phoebusalarm.alarmtree import AlarmTree
 from phoebusalarm.alarmnodes import AlarmPV
 from phoebusalarm.alarmfilter import AlarmFilter
 
+class MalformedAlh(Exception):
+    """raised if the input alh is incorrect/of unexpected format"""
 
 class ParsingLogger(logging.Logger):
     """A custom logger to log the position in the file.
@@ -177,6 +179,10 @@ def parse_alh(filepath, configName="Accelerator", userDispatch=None):
                     idStart = exStr.find(" ID '")
                     identifier = exStr[idStart+5:-1]
                     currentNode = alarmTree.get_node(identifier)
+                except MalformedAlh as ex:
+                    exStr = str(ex)
+                    logger.error("Malformed input, aborting file parse: %s", exStr)
+                    break
 
     return alarmTree
 
@@ -505,6 +511,8 @@ def find_parent(tree, currentNode, parentName):
         # alias contains the original alh alarm group name
         while parentName != currentNode.tag:
             currentNode = tree.parent(currentNode.identifier)
+            if currentNode is None:
+                raise MalformedAlh("Unable to locate parent: {par}".format(par=parentName))
         parentId = currentNode.identifier
 
     return parentId
