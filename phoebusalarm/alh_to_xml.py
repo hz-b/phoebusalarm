@@ -26,7 +26,7 @@ import os
 
 from phoebusalarm.alhparser import parse_alh
 from phoebusalarm.alarmtree import InclusionMarker
-
+from phoebusalarm._version import get_versions
 
 def recursive_alh_parse(inPath, outPath, singleFile, configName=None):
     """
@@ -105,7 +105,11 @@ def alh_to_xml():
                  "xml files. Optionally recurses through the files "
                  "included in the top alarm handler config.")
 
+    ver = get_versions()['version']
+
     parser = argparse.ArgumentParser(description=dscString)
+    parser.add_argument('--version', action='version',
+                        version='%(prog)s v' + ver)
     parser.add_argument("input", help="alarm handler file to convert")
     parser.add_argument("-o", "--output",
                         help="output xml-file")
