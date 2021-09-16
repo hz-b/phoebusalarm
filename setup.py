@@ -20,5 +20,9 @@ setup(
     url='https://gitlab.helmholtz-berlin.de/acs/pyphoebus/',
     license="GPL v3",
     packages=find_packages(include=['phoebusalarm']),
+    entry_points = {
+            'console_scripts': ['alh-to-xml=phoebusalarm.alh_to_xml:alh_to_xml']
+                    },
     install_requires=['treelib'],
+
 )
