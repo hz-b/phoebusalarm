@@ -28,7 +28,31 @@ from phoebusalarm.alhparser import parse_alh
 from phoebusalarm.alarmtree import InclusionMarker
 from phoebusalarm._version import get_versions
 
-def recursive_alh_parse(inPath, outPath, singleFile, configName=None):
+
+def paste_subtree_into_base(baseTree, subTree, inclusionId):
+    """add subtree at inclusionId into baseTree and remove inclusionId
+
+    also remove the root element (config) from the subtree"""
+
+    logger = logging.getLogger(__name__)
+    parent = baseTree.parent(inclusionId)
+    firstLevelList = subTree.children(subTree.root)
+    if len(firstLevelList) != 1:
+        raise RuntimeError("There should only be one top-level group")
+
+    rootRemoved = subTree.remove_subtree(firstLevelList[0].identifier)
+    try:
+        baseTree.paste(parent.identifier, rootRemoved)
+    except ValueError as ex:
+        logger.critical("Failed to include %s into tree. "
+                        "Original exception: %s",
+                        firstLevelList[0].identifier, ex)
+
+    baseTree.remove_node(inclusionId)
+
+
+def recursive_alh_parse(inPath, outPath, singleFile=False, configName=None,
+                        ignoreExisting=False):
     """
     Wrap the parse_alh function and call it on any included files as well
 
@@ -38,11 +62,14 @@ def recursive_alh_parse(inPath, outPath, singleFile, configName=None):
         path to the alarm handler file.
     outPath : path
         path of the output xml file.
-    singleFile : bool
+    singleFile : bool, optional
         combines all included alarm handler files into one xml if true.
+        The default is False
     configName : str, optional
         Name of the config for phoebus. Uses the base of the inPath fileName
         if None. The default is None.
+    ignoreExisting : bool, optional
+        skip recursion if the output file exists. The default is false
 
     Returns
     -------
@@ -51,7 +78,10 @@ def recursive_alh_parse(inPath, outPath, singleFile, configName=None):
 
     """
 
-    logger = logging.getLogger(__name__)
+    if singleFile and ignoreExisting:
+        raise ValueError("must overwrite exsiting files, if creating a single output")
+
+    overwrite = not ignoreExisting
 
     inputDir, inputName = os.path.split(inPath)
     outputDir, outputName = os.path.split(outPath)
@@ -73,26 +103,14 @@ def recursive_alh_parse(inPath, outPath, singleFile, configName=None):
             subInPath = os.path.join(inputDir, inclusion.filename)
             subOutPath = os.path.join(outputDir, subOutName)
 
-        subConfigName = baseTree.parent(inclusion.identifier).identifier
-        subTree = recursive_alh_parse(subInPath, subOutPath, singleFile,
-                                      configName=subConfigName)
-        # remove the root element (config) from the subtree and
-        # add the subtree instead of the inclusion node
-        if singleFile:
-            parent = baseTree.parent(inclusion.identifier)
-            firstLevelList = subTree.children(subTree.root)
-            if len(firstLevelList) != 1:
-                raise RuntimeError("There should only be one top-level group",
-                                   subInPath, len(firstLevelList))
+        if overwrite or not os.path.isfile(subOutPath):
+            subConfigName = baseTree.parent(inclusion.identifier).identifier
+            subTree = recursive_alh_parse(subInPath, subOutPath, singleFile,
+                                          configName=subConfigName)
 
-            rootRemoved = subTree.remove_subtree(firstLevelList[0].identifier)
-            try:
-                baseTree.paste(parent.identifier, rootRemoved)
-            except ValueError as ex:
-                logger.critical("Failed to include %s into tree. "
-                                "Original exception: %s", subInPath, ex)
+            if singleFile:
+                paste_subtree_into_base(baseTree, subTree, inclusion.identifier)
 
-            baseTree.remove_node(inclusion.identifier)
 
     if not singleFile:
         baseTree.write_xml(outPath, forceXMLext=True)
@@ -121,6 +139,8 @@ def alh_to_xml():
                         help="output a single file even for recursion")
     parser.add_argument("-t", "--trim", action='store_true',
                         help="remove the top-level group to reduce depth of tree")
+    parser.add_argument("-i", "--ignore-existing", action='store_true',
+                        help="do not overwrite existing files when recursing")
     parser.add_argument("-v", "--verbosity", action='count', default=0,
                         help="increase log detail")
 
