@@ -191,7 +191,7 @@ def alh_to_xml():
     config.tag = configName
 
     tree.write_xml(outputPath, forceXMLext=True)
-    print("Output written to: ", outputPath)
+    logging.info("Output written to: ", outputPath)
 
 
 if __name__ == "__main__":
