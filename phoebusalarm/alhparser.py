@@ -303,6 +303,11 @@ def process_alias(alhArgs, tree, currentNode, **kwargs):
             newNode.commands = oldNode.commands
             newNode.displays = oldNode.displays
             newNode.actions = oldNode.actions
+            try:
+                newNode.filter = oldNode.filter
+            except AttributeError:
+                pass
+
             currentNode = newNode
 
     return currentNode, None
@@ -407,6 +412,13 @@ def process_forcepv(alhArgs, tree, currentNode, **kwargs):
         currentNode.enabled = True
         filterObj = create_alarm_filter(forcePV, forceValue, forceEnables)
 
+    try:   # check for existing filter, if this a node, it may not have a filter object
+        if currentNode.filter:
+            logger.warning("Replacing inherited filter/ForcePV for %s",
+                           currentNode.identifier)
+    except AttributeError:
+        pass
+
     currentNode.filter = filterObj
 
     return currentNode, None
@@ -446,8 +458,8 @@ def propagate_filter(tree, parentId, currentNode):
         parentNode = tree.get_node(parentId)
         filterStr = parentNode.filter
         currentNode.filter = filterStr
-        logging.info("Setting ForcePV for %s to %s from parent %s",
-                     currentNode.identifier, filterStr, parentNode.identifier)
+        logger.info("Setting ForcePV for %s to %s from parent %s",
+                    currentNode.identifier, filterStr, parentNode.identifier)
     except AttributeError:
         pass
 
