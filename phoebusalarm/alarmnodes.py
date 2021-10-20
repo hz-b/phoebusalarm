@@ -253,7 +253,7 @@ class AlarmPV(AlarmNode):
         self.filter = ""
         self._xmlType = "pv"
 
-    def add_filter(self, expr, value=None, replaceDict=None):
+    def add_filter(self, expr, value=1, replaceDict=None):
         if replaceDict is None:
             replaceDict = {}
         self.filter = AlarmFilter(expr, value, **replaceDict)

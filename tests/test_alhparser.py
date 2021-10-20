@@ -204,13 +204,6 @@ class TestForcePVCalc(unittest.TestCase):
                        "F":""}
         self.assertDictEqual(self.node.filter.replacements, expectation)
 
-    def test_non01_val(self):
-        alh.process_forcepv("CALC CD-T- 4 NE", self.tree, self.node)
-        argList = ["CALC A+B", "CALC_A test:ai1", "CALC_B test:ai2"]
-        for arg in argList:
-            alh.process_forcepvcalc(arg, self.tree, self.node)
-        self.assertEqual(self.node.filter.expr, "(A+B)=4")
-
 
 if __name__ == '__main__':
     unittest.main()

@@ -60,5 +60,44 @@ class TestAlarmFilter(unittest.TestCase):
 
         self.assert_filters(filterObj, expectedAlh, expectedPhoebus)
 
+    def test_calc_with_value(self):
+        filterObj = AlarmFilter(expr="A*B", value=2, A="test:ai1", B="test:ai2",
+                                enabling=False)
+
+        expectedAlh = ["$FORCEPV CALC CD--- 2 NE",
+                       "$FORCEPV_CALC A*B",
+                       "$FORCEPV_CALC_A test:ai1",
+                       "$FORCEPV_CALC_B test:ai2"]
+
+        expectedPhoebus = "test:ai1*test:ai2 != 2"
+
+        self.assert_filters(filterObj, expectedAlh, expectedPhoebus)
+
+    def test_calc_unequal(self):
+        filterObj = AlarmFilter(expr="A#B", A="test:ai1", B="test:ai2",
+                                enabling=False)
+
+        expectedAlh = ["$FORCEPV CALC CD--- 1 NE",
+                       "$FORCEPV_CALC A#B",
+                       "$FORCEPV_CALC_A test:ai1",
+                       "$FORCEPV_CALC_B test:ai2"]
+
+        expectedPhoebus = "!(test:ai1 != test:ai2)"
+
+        self.assert_filters(filterObj, expectedAlh, expectedPhoebus)
+
+    def test_calc_equal(self):
+        filterObj = AlarmFilter(expr="A=B", A="test:ai1", B="test:ai2",
+                                enabling=False)
+
+        expectedAlh = ["$FORCEPV CALC CD--- 1 NE",
+                       "$FORCEPV_CALC A=B",
+                       "$FORCEPV_CALC_A test:ai1",
+                       "$FORCEPV_CALC_B test:ai2"]
+
+        expectedPhoebus = "!(test:ai1 == test:ai2)"
+
+        self.assert_filters(filterObj, expectedAlh, expectedPhoebus)
+
 if __name__ == '__main__':
     unittest.main()

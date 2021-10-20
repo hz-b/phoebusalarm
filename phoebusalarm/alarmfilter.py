@@ -19,11 +19,13 @@
 AlarmFilter class represent the filter/forcePV to support export to xml and alh
 """
 
+import re
+
 from . import alh_export
 
 class AlarmFilter():
     """Abstraction for the filter to ease conversion from and to alh FORCEPV"""
-    def __init__(self, expr, value=None, A="", B="", C="", D="", E="", F="",
+    def __init__(self, expr, value=1, A="", B="", C="", D="", E="", F="",
                  enabling=True):
         """
         Create a new alarm filter object.
@@ -31,12 +33,13 @@ class AlarmFilter():
         Parameters
         ----------
         expr : str
-            a PV or an EPICS CALC like expression, such as A>2 or A+B=C. Any
-            expression must evaluate to a true or false. If given only a PV,
-            you must also provide a value. Otherwise value must be None.
+            a PV or an EPICS CALC like expression, such as A>B or A+B=C.
+            It must not contain constants for alh compatibility. The
+            expression is compared to the value, with the default 1, i.e. true.
+            If neither A through F are given, expr is assumed to simply be a PV.
         value : float, optional
-            If a PV was given in expr, give the value for the PV to activate
-            the filter at. The default is None.
+            give the value of expression to activate the filter at.
+            The default is 1, i.e. true.
         A : str, optional
             PV to use vor A. The default is "".
         B : str, optional
@@ -86,8 +89,8 @@ class AlarmFilter():
         """
         forceMask = alh_export.make_mask(self.enabling, latch)
 
-        if self.value is None:
-            lines = ["$FORCEPV CALC {mask} {val} NE".format(mask=forceMask, val=1),
+        if any(self.replacements.values()):
+            lines = ["$FORCEPV CALC {mask} {val} NE".format(mask=forceMask, val=self.value),
                      "$FORCEPV_CALC {expr}".format(expr=self.expr)]
             for key, pv in sorted(self.replacements.items()):
                 if pv:
@@ -108,22 +111,26 @@ class AlarmFilter():
         """
         expr = self.expr
 
-        if self.value is None:
+        # fix differences between calc and phoebus comparisons
+        expr = re.sub(r"([^=!])=([^=])",r"\1 == \2",expr)
+        expr = expr.replace("#", " != ")
+
+        if self.value == 1:
             if self.enabling:
                 fmtString = "{expr}"
             else:
                 fmtString = "!({expr})"
-
-            for letter in ["A", "B", "C", "D", "E", "F"]:
-                expr = expr.replace(letter, "{{{letter}}}".format(letter=letter))
-
-            expr = expr.format(**self.replacements)
-
         else:
             if self.enabling:
                 fmtString = "{expr} == {val}"
             else:
                 fmtString = "{expr} != {val}"
+
+        if any(self.replacements.values()):
+            for letter in ["A", "B", "C", "D", "E", "F"]:
+                expr = expr.replace(letter, "{{{letter}}}".format(letter=letter))
+
+            expr = expr.format(**self.replacements)
 
         filterStr = fmtString.format(expr=expr, val=self.value)
 
