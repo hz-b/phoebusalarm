@@ -59,7 +59,7 @@ class TestAlarmNode(unittest.TestCase):
                                    "/path/to/display.bob",
                                    macros)
         self.assertEqual(self.alarmNode.displays[0].details,
-                         r"file:///path/to/display.bob?DEV=42&A=some+thing")
+                         r"file:///path/to/display.bob?A=some+thing&DEV=42")
 
     def test_display_url(self):
         macros = {"DEV":42, "A":"some thing"}
@@ -68,7 +68,7 @@ class TestAlarmNode(unittest.TestCase):
                                    "file:///path/to/display.bob",
                                    macros)
         self.assertEqual(self.alarmNode.displays[0].details,
-                         "file:///path/to/display.bob?DEV=42&A=some+thing")
+                         "file:///path/to/display.bob?A=some+thing&DEV=42")
 
     def test_display_url_with_query(self):
         macros = {"DEV":42, "A":"some thing"}
@@ -132,7 +132,7 @@ class TestAlarmNodeAlh(unittest.TestCase):
         self.alarmNode.add_display("irrelevant title",
                                    "file:///some/path/to/display.bob?PV=test%3Aai1&B=some+other+thing")
         expectation = ["GROUP parent Name",
-                       '$COMMAND run_edm.sh -m "PV=test:ai1,B=some other thing" display.edl']
+                       '$COMMAND run_edm.sh -m "B=some other thing,PV=test:ai1" display.edl']
         self.assert_expected_alh(expectation)
 
     def test_action(self):

@@ -136,6 +136,7 @@ class AlarmNode(Node):
                                  + parseResult.path)
 
             if not parseResult.query:
+                macros = OrderedDict(sorted(macros.items()))
                 queryStr = urllib.parse.urlencode(macros)
                 parseResult = parseResult._replace(query=queryStr)
 
