@@ -39,7 +39,7 @@
         <latching>true</latching>
         <annunciating>true</annunciating>
         <delay>5</delay>
-        <filter>test:ai1&lt;3</filter>
+        <filter>(test:ai1&lt;3) == 1</filter>
       </pv>
     </component>
     <component name="Group1_2">

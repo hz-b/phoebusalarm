@@ -37,9 +37,11 @@ class AlarmFilter():
             It must not contain constants for alh compatibility. The
             expression is compared to the value, with the default 1, i.e. true.
             If neither A through F are given, expr is assumed to simply be a PV.
-        value : float, optional
+        value : numeric or True, optional
             give the value of expression to activate the filter at.
-            The default is 1, i.e. true.
+            The default is 1. Use True if the expression is directly True/False,
+            i.e. 0 or 1. This will create a simpler Phoebus filter than using
+            1.
         A : str, optional
             PV to use vor A. The default is "".
         B : str, optional
@@ -89,8 +91,10 @@ class AlarmFilter():
         """
         forceMask = alh_export.make_mask(self.enabling, latch)
 
+        value = int(self.value) if isinstance(self.value, bool) else self.value
+
         if any(self.replacements.values()):
-            lines = ["$FORCEPV CALC {mask} {val} NE".format(mask=forceMask, val=self.value),
+            lines = ["$FORCEPV CALC {mask} {val} NE".format(mask=forceMask, val=value),
                      "$FORCEPV_CALC {expr}".format(expr=self.expr)]
             for key, pv in sorted(self.replacements.items()):
                 if pv:
@@ -100,7 +104,7 @@ class AlarmFilter():
         else:
             lines = ["$FORCEPV {expr} {mask} {val} NE".format(expr=self.expr,
                                                               mask=forceMask,
-                                                              val=self.value)]
+                                                              val=value)]
 
         return lines
 
@@ -115,16 +119,16 @@ class AlarmFilter():
         expr = re.sub(r"([^=!])=([^=])",r"\1 == \2",expr)
         expr = expr.replace("#", " != ")
 
-        if self.value == 1:
+        if self.enabling:
+            fmtString = "({expr}) == {val}"
+        else:
+            fmtString = "({expr}) != {val}"
+
+        if self.value is True:   #  important, don't just check if self.value
             if self.enabling:
                 fmtString = "{expr}"
             else:
                 fmtString = "!({expr})"
-        else:
-            if self.enabling:
-                fmtString = "{expr} == {val}"
-            else:
-                fmtString = "{expr} != {val}"
 
         if any(self.replacements.values()):
             for letter in ["A", "B", "C", "D", "E", "F"]:

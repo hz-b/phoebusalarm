@@ -160,7 +160,7 @@ class TestGroupFilter(unittest.TestCase):
         tree = alh.parse_alh(self.inPath, configName="Accelerator")
         alarms = [node for node in tree.all_nodes() if isinstance(node, AlarmPV)]
         for alarm in alarms:
-            self.assertEqual(alarm.filter.get_phoebus_filter(), "!(test:ai3<4)")
+            self.assertEqual(alarm.filter.get_phoebus_filter(), "(test:ai3<4) != 1")
 
     def tearDown(self):
         os.remove(self.inPath)

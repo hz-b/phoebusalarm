@@ -154,7 +154,7 @@ class AlarmNode(Node):
         title : str
             title to identify action.
         delay : int
-            time in seconds the alarm needs to be unacknoledged
+            time in seconds the alarm needs to be unacknowledged
             before action is triggered.
         details : str
             DESCRIPTION.
