@@ -124,17 +124,20 @@ class AlarmFilter():
         else:
             fmtString = "({expr}) != {val}"
 
-        if self.value is True:   #  important, don't just check if self.value
+        if self.value is True:   # important, don't just check if self.value
             if self.enabling:
                 fmtString = "{expr}"
             else:
                 fmtString = "!({expr})"
 
-        if any(self.replacements.values()):
+        if any(self.replacements.values()):  # replace letters if any are given
             for letter in ["A", "B", "C", "D", "E", "F"]:
                 expr = expr.replace(letter, "{{{letter}}}".format(letter=letter))
 
             expr = expr.format(**self.replacements)
+        else:                                # if no replacements are given, no need for ()
+            fmtString = fmtString.replace('(','')
+            fmtString = fmtString.replace(')','')
 
         filterStr = fmtString.format(expr=expr, val=self.value)
 

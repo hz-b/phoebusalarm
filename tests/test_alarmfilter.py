@@ -22,7 +22,7 @@ class TestAlarmFilter(unittest.TestCase):
         filterObj = AlarmFilter(expr="test:ai1", value=5)
 
         expectedAlh = ["$FORCEPV test:ai1 ----- 5 NE"]
-        expectedPhoebus = "(test:ai1) == 5"
+        expectedPhoebus = "test:ai1 == 5"
 
         self.assert_filters(filterObj, expectedAlh, expectedPhoebus)
 
@@ -30,7 +30,7 @@ class TestAlarmFilter(unittest.TestCase):
         filterObj = AlarmFilter(expr="test:ai1", value=5, enabling=False)
 
         expectedAlh = ["$FORCEPV test:ai1 CD--- 5 NE"]
-        expectedPhoebus = "(test:ai1) != 5"
+        expectedPhoebus = "test:ai1 != 5"
 
         self.assert_filters(filterObj, expectedAlh, expectedPhoebus)
 
