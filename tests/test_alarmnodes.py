@@ -7,8 +7,8 @@ from operator import attrgetter
 import unittest
 import xml.etree.ElementTree as ET
 
-import context
 from phoebusalarm.alarmnodes import (AlarmNode, AlarmPV, InclusionMarker)
+
 
 class TestOrdering(unittest.TestCase):
     def test_string_int(self):
@@ -18,6 +18,7 @@ class TestOrdering(unittest.TestCase):
         alarm3 = AlarmPV("test:pv3", sortKey=1.0e-1)
         sortedList = sorted([alarm0, alarm1, alarm2, alarm3], key=attrgetter('sortKey'))
         self.assertListEqual(sortedList, [alarm3, alarm1, alarm0, alarm2])
+
 
 class TestInclusionMarker(unittest.TestCase):
     """
@@ -53,7 +54,7 @@ class TestAlarmNode(unittest.TestCase):
         self.assertEqual(xml.attrib["name"], self.name)
 
     def test_display_abs_path(self):
-        macros = {"DEV":42, "A":"some thing"}
+        macros = {"DEV": 42, "A": "some thing"}
 
         self.alarmNode.add_display("title",
                                    "/path/to/display.bob",
@@ -62,7 +63,7 @@ class TestAlarmNode(unittest.TestCase):
                          r"file:///path/to/display.bob?A=some+thing&DEV=42")
 
     def test_display_url(self):
-        macros = {"DEV":42, "A":"some thing"}
+        macros = {"DEV": 42, "A": "some thing"}
 
         self.alarmNode.add_display("title",
                                    "file:///path/to/display.bob",
@@ -71,23 +72,27 @@ class TestAlarmNode(unittest.TestCase):
                          "file:///path/to/display.bob?A=some+thing&DEV=42")
 
     def test_display_url_with_query(self):
-        macros = {"DEV":42, "A":"some thing"}
+        macros = {"DEV": 42, "A": "some thing"}
 
-        self.alarmNode.add_display("title",
-                                   "file:///path/to/display.bob?DEV=7&B=some+other+thing",
-                                   macros)
-        self.assertEqual(self.alarmNode.displays[0].details,
-                         "file:///path/to/display.bob?DEV=7&B=some+other+thing")
-
+        self.alarmNode.add_display(
+            "title",
+            "file:///path/to/display.bob?DEV=7&B=some+other+thing",
+            macros
+            )
+        self.assertEqual(
+            self.alarmNode.displays[0].details,
+            "file:///path/to/display.bob?DEV=7&B=some+other+thing"
+            )
 
     def test_display_filename(self):
-        macros = {"DEV":42, "A":"some thing"}
+        macros = {"DEV": 42, "A": "some thing"}
 
         with self.assertRaises(ValueError):
             self.alarmNode.add_display("blubb", "display.bob", macros)
 
         self.alarmNode.add_display("title", "display.bob")
         self.assertEqual(self.alarmNode.displays[0].details, "display.bob")
+
 
 class TestAlarmNodeAlh(unittest.TestCase):
     """
@@ -106,7 +111,6 @@ class TestAlarmNodeAlh(unittest.TestCase):
     def test_base(self):
         expectation = ["GROUP parent Name"]
         self.assert_expected_alh(expectation)
-
 
     def test_with_alias(self):
         expectation = ["GROUP parent alhName",
@@ -129,10 +133,16 @@ class TestAlarmNodeAlh(unittest.TestCase):
         self.assert_expected_alh(expectation)
 
     def test_display(self):
-        self.alarmNode.add_display("irrelevant title",
-                                   "file:///some/path/to/display.bob?PV=test%3Aai1&B=some+other+thing")
-        expectation = ["GROUP parent Name",
-                       '$COMMAND run_edm.sh -m "B=some other thing,PV=test:ai1" display.edl']
+        self.alarmNode.add_display(
+            "irrelevant title",
+            "file:///some/path/to/display.bob?PV=test%3Aai1&B=some+other+thing"
+            )
+
+        expectation = [
+            "GROUP parent Name",
+            '$COMMAND run_edm.sh -m "B=some other thing,PV=test:ai1" display.edl'
+            ]
+
         self.assert_expected_alh(expectation)
 
     def test_action(self):
@@ -201,6 +211,7 @@ class TestAlarmPV(unittest.TestCase):
         descEle = xml.findall("description")
         self.assertEqual(len(descEle), 1, "there should one description element")
         self.assertEqual(descEle[0].text, self.pvDesc)
+
 
 if __name__ == '__main__':
     unittest.main()

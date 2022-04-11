@@ -23,8 +23,9 @@ import os
 import urllib.parse
 import warnings
 
-#module wide settings
-EDM_COMMAND = "run_edm.sh" # use this command to open .edl files
+# module wide settings
+EDM_COMMAND = "run_edm.sh"  # use this command to open .edl files
+
 
 def format_action(action, delay):
     actionType, details = action.split(":", maxsplit=1)
@@ -45,6 +46,7 @@ def format_action(action, delay):
 
     return line
 
+
 def format_display(display):
     if ".bob" in display:
         parseResult = urllib.parse.urlparse(display)
@@ -63,6 +65,7 @@ def format_display(display):
     else:
         line = "$GUIDANCE {url}".format(url=display)
     return line
+
 
 def make_mask(enabled, latch):
 

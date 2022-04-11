@@ -41,6 +41,7 @@ Display = namedtuple("display", ['title', 'details'])
 Command = namedtuple("command", ['title', 'details'])
 Action = namedtuple("automated_action", ['title', 'details', 'delay'])
 
+
 class AlarmNode(Node):
     """
     Representation of an alarm tree node
@@ -259,7 +260,6 @@ class AlarmPV(AlarmNode):
             replaceDict = {}
         self.filter = AlarmFilter(expr, value, **replaceDict)
 
-
     def get_xml_element(self, **kwargs):
         """
         convert the node to an element tree description to dump as xml
@@ -313,7 +313,6 @@ class AlarmPV(AlarmNode):
         else:
             defaultEnabled = False
 
-
         mask = alh_export.make_mask(defaultEnabled, self.latch)
 
         lineList[0] = "CHANNEL {par} {pv} {mask}".format(par=parent,
@@ -322,7 +321,6 @@ class AlarmPV(AlarmNode):
 
         if self.desc:
             lineList.insert(1, "$ALIAS {0}".format(self.desc))
-
 
         if self.delay > 0:
             line = "$ALARMCOUNTFILTER {cnt} {dly}".format(cnt=self.count,
@@ -333,7 +331,7 @@ class AlarmPV(AlarmNode):
             try:
                 lineList.extend(self.filter.get_alh_force(self.latch))
             except AttributeError:
-                raise ValueError("can't create alh force PV from %s"%type(self.filter))
+                raise ValueError("can't create alh force PV from %s" % type(self.filter))
 
         return lineList
 

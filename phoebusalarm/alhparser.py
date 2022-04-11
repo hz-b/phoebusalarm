@@ -40,8 +40,10 @@ from phoebusalarm.alarmtree import AlarmTree
 from phoebusalarm.alarmnodes import AlarmPV
 from phoebusalarm.alarmfilter import AlarmFilter
 
+
 class MalformedAlh(Exception):
     """raised if the input alh is incorrect/of unexpected format"""
+
 
 class ParsingLogger(logging.Logger):
     """A custom logger to log the position in the file.

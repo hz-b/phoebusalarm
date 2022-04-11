@@ -5,8 +5,8 @@ Test for the AlarmFilter
 
 import unittest
 
-import context
 from phoebusalarm.alarmfilter import AlarmFilter
+
 
 class TestAlarmFilter(unittest.TestCase):
 
@@ -16,7 +16,6 @@ class TestAlarmFilter(unittest.TestCase):
 
         self.assertEqual(alh, expectedAlh)
         self.assertEqual(phoebus, expectedPhoebus)
-
 
     def test_simple_pv(self):
         filterObj = AlarmFilter(expr="test:ai1", value=5)
@@ -112,6 +111,7 @@ class TestAlarmFilter(unittest.TestCase):
         expectedPhoebus = "!(test:ai1 == test:ai2)"
 
         self.assert_filters(filterObj, expectedAlh, expectedPhoebus)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -49,9 +49,6 @@ from treelib import Tree
 from .alarmnodes import (AlarmNode, AlarmPV, InclusionMarker)
 
 
-
-
-
 class AlarmTree(Tree):
     """
     Tree to hold the alarm configuration

@@ -23,6 +23,7 @@ import re
 
 from . import alh_export
 
+
 class AlarmFilter():
     """Abstraction for the filter to ease conversion from and to alh FORCEPV"""
     def __init__(self, expr, value=1, A="", B="", C="", D="", E="", F="",
@@ -66,12 +67,12 @@ class AlarmFilter():
         self.expr = expr
         self.value = value
         self.enabling = enabling
-        self.replacements = {"A":A,
-                             "B":B,
-                             "C":C,
-                             "D":D,
-                             "E":E,
-                             "F":F}
+        self.replacements = {"A": A,
+                             "B": B,
+                             "C": C,
+                             "D": D,
+                             "E": E,
+                             "F": F}
 
     def get_alh_force(self, latch=True):
         """
@@ -108,7 +109,6 @@ class AlarmFilter():
 
         return lines
 
-
     def get_phoebus_filter(self):
         """
         Get the filter in a phoebus compatible string
@@ -116,7 +116,7 @@ class AlarmFilter():
         expr = self.expr
 
         # fix differences between calc and phoebus comparisons
-        expr = re.sub(r"([^=!])=([^=])",r"\1 == \2",expr)
+        expr = re.sub(r"([^=!])=([^=])", r"\1 == \2", expr)
         expr = expr.replace("#", " != ")
 
         if self.enabling:
@@ -135,9 +135,9 @@ class AlarmFilter():
                 expr = expr.replace(letter, "{{{letter}}}".format(letter=letter))
 
             expr = expr.format(**self.replacements)
-        else:                                # if no replacements are given, no need for ()
-            fmtString = fmtString.replace('(','')
-            fmtString = fmtString.replace(')','')
+        else:  # if no replacements are given, no need for ()
+            fmtString = fmtString.replace('(', '')
+            fmtString = fmtString.replace(')', '')
 
         filterStr = fmtString.format(expr=expr, val=self.value)
 

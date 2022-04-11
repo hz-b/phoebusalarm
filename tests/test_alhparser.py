@@ -10,11 +10,9 @@ import os
 import unittest
 from treelib.exceptions import DuplicatedNodeIdError
 
-import context
 import phoebusalarm.alhparser as alh
 from phoebusalarm.alarmtree import AlarmTree
 from phoebusalarm.alarmnodes import AlarmPV
-from phoebusalarm.alarmfilter import AlarmFilter
 
 
 class TestGuidance(unittest.TestCase):
@@ -165,6 +163,7 @@ class TestGroupFilter(unittest.TestCase):
     def tearDown(self):
         os.remove(self.inPath)
 
+
 class TestForcePV(unittest.TestCase):
     """Test simple forcePV"""
     def setUp(self):
@@ -190,18 +189,17 @@ class TestForcePVCalc(unittest.TestCase):
         alh.process_forcepvcalc(alhFragment, self.tree, self.node)
         self.assertEqual(self.node.filter.expr, "A+B<3")
 
-
     def test_letters(self):
         argList = ["CALC_A test:ai1", "CALC_B test:ai2", "CALC_C test:ai3"]
         for arg in argList:
             alh.process_forcepvcalc(arg, self.tree, self.node)
 
-        expectation = {"A":"test:ai1",
-                       "B":"test:ai2",
-                       "C":"test:ai3",
-                       "D":"",
-                       "E":"",
-                       "F":""}
+        expectation = {"A": "test:ai1",
+                       "B": "test:ai2",
+                       "C": "test:ai3",
+                       "D": "",
+                       "E": "",
+                       "F": ""}
         self.assertDictEqual(self.node.filter.replacements, expectation)
 
 

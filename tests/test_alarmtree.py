@@ -11,10 +11,7 @@ import xml.etree.ElementTree as ET
 
 from treelib.exceptions import DuplicatedNodeIdError
 
-import context
 from phoebusalarm.alarmtree import AlarmTree
-from phoebusalarm.alarmnodes import AlarmNode
-
 
 
 class TestAlarmTree(unittest.TestCase):
@@ -26,8 +23,8 @@ class TestAlarmTree(unittest.TestCase):
         tree = AlarmTree(configName="Test")
         node1 = tree.create_node("Group1")
         node2 = tree.create_node("Group2")
-        node3 = tree.create_node("SubGroup", parent=node1)
-        node4 = tree.create_node("SubGroup", parent=node2)
+        tree.create_node("SubGroup", parent=node1)
+        tree.create_node("SubGroup", parent=node2)
         with self.assertRaises(DuplicatedNodeIdError):
             tree.create_node("SubGroup", parent=node2)
 
@@ -45,7 +42,7 @@ class TestAlarmTree(unittest.TestCase):
         self.assertIsNotNone(tree.root)
         self.assertIsNotNone(tree.parent(alarm.identifier))
         self.assertIsNot(tree.get_node(tree.root), alarm)
-        self.assertIsNot(type(tree.get_node(tree.root)),type(alarm))
+        self.assertIsNot(type(tree.get_node(tree.root)), type(alarm))
 
 
 class TestEndToEnd(unittest.TestCase):
@@ -80,8 +77,7 @@ class TestEndToEnd(unittest.TestCase):
         pv2.delay = 5
         pv2.sortKey = 2
 
-        pv2.add_filter(expr="A<3", replaceDict={"A":"test:ai1"})
-
+        pv2.add_filter(expr="A<3", replaceDict={"A": "test:ai1"})
 
         pv1 = self.alarmTree.create_alarm("test:ai1", parent=group1_1)
         pv1.desc = "First Alarm PV"
@@ -89,8 +85,6 @@ class TestEndToEnd(unittest.TestCase):
         pv1.latch = True
         pv1.annunciate = True
         pv1.sortKey = 1
-
-
 
         # another subgroup
         group1_2 = self.alarmTree.create_node("Group1_2", parent=group1)
@@ -121,11 +115,10 @@ class TestEndToEnd(unittest.TestCase):
         with open(self.referenceALH) as f:
             refLines = f.readlines()
 
-        cleanedRef = [l for l in refLines if l != "\n"]
-        cleanedActual = [l for l in actualLines if l != "\n"]
+        cleanedRef = [line for line in refLines if line != "\n"]
+        cleanedActual = [line for line in actualLines if line != "\n"]
 
         self.assertListEqual(cleanedActual, cleanedRef)
-
 
     def tearDown(self):
         os.remove(self.outFile)

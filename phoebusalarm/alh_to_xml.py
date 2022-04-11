@@ -111,7 +111,6 @@ def recursive_alh_parse(inPath, outPath, singleFile=False, configName=None,
             if singleFile:
                 paste_subtree_into_base(baseTree, subTree, inclusion.identifier)
 
-
     if not singleFile:
         baseTree.write_xml(outPath, forceXMLext=True)
 
