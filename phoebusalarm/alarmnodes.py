@@ -291,12 +291,15 @@ class AlarmPV(AlarmNode):
             except AttributeError:
                 toAdd["filter"] = self.filter
 
-        for name, value in toAdd.items():
-            prop = ET.SubElement(xmlElement, name)
+
+        for i, (name, value) in enumerate(toAdd.items()):
+            subelement = ET.Element(name)
             if isinstance(value, bool):
-                prop.text = str(value).lower()
+                subelement.text = str(value).lower()
             else:
-                prop.text = str(value)
+                subelement.text = str(value)
+
+            xmlElement.insert(i, subelement)
 
         return xmlElement
 
