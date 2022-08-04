@@ -9,9 +9,7 @@ import os
 import unittest
 import xml.etree.ElementTree as ET
 
-from treelib.exceptions import DuplicatedNodeIdError
-
-from phoebusalarm.alarmtree import AlarmTree
+from phoebusalarm.alarmtree import AlarmTree, DuplicatedNodeIdError
 
 
 class TestAlarmTree(unittest.TestCase):

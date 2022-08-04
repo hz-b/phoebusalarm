@@ -28,9 +28,8 @@ from collections import namedtuple, OrderedDict
 from itertools import chain
 import os
 import urllib.parse
+import uuid
 import xml.etree.ElementTree as ET
-
-from treelib import Node
 
 from . import alh_export
 from .alarmfilter import AlarmFilter
@@ -42,7 +41,52 @@ Command = namedtuple("command", ['title', 'details'])
 Action = namedtuple("automated_action", ['title', 'details', 'delay'])
 
 
-class AlarmNode(Node):
+class BaseNode:
+    """
+    Common funcitonality of "Groups" and "Inclusions"
+    """
+    def __init__(self, identifier=None, tag=None, sortKey=0):
+        """
+        Constructor
+
+        Parameters
+        ----------
+        identifier : string, optional
+            A unique identifier of the Node. If None, a UUID will be created.
+            The default is None.
+        tag : string, optional
+            An alternative tag of the node.
+        sortKey : float, optional
+            A key to sort the nodes/pvs by. The default is insertion order
+        """
+
+        if identifier is None:
+            self.id = str(uuid.uuid1())
+        else:
+            self.id = identifier
+
+        if tag is None:
+            self.tag = self.id
+        else:
+            self.tag = tag
+
+        self.sortKey = sortKey
+
+    @property
+    def sortKey(self):
+        return self._sortKey
+
+    @sortKey.setter
+    def sortKey(self, newKey):
+        self._sortKey = str(newKey)
+
+    # keep the old identifier for backwards compatiblity
+    @property
+    def identifier(self):
+        return self.id
+
+
+class AlarmNode(BaseNode):
     """
     Representation of an alarm tree node
     """
@@ -59,6 +103,7 @@ class AlarmNode(Node):
             The default is None.
         tag : string, optional
             An alternative tag of the node. Not exported to xml.
+            Used as the unique name in alh export.
             The default is None, which sets tag=name.
         sortKey : float, optional
             A key to sort the nodes/pvs by. The default is insertion order
@@ -66,22 +111,14 @@ class AlarmNode(Node):
         if tag is None:
             tag = name
 
-        super().__init__(tag=tag, identifier=identifier)
+        super().__init__(identifier=identifier, tag=tag, sortKey=sortKey)
+
         self.guidances = []
         self.commands = []
         self.displays = []
         self.actions = []
-        self.sortKey = sortKey
         self._xmlType = "component"
         self._name = name
-
-    @property
-    def sortKey(self):
-        return self._sortKey
-
-    @sortKey.setter
-    def sortKey(self, newKey):
-        self._sortKey = str(newKey)
 
     def add_guidance(self, title, details):
         """
@@ -291,7 +328,6 @@ class AlarmPV(AlarmNode):
             except AttributeError:
                 toAdd["filter"] = self.filter
 
-
         for i, (name, value) in enumerate(toAdd.items()):
             subelement = ET.Element(name)
             if isinstance(value, bool):
@@ -339,24 +375,15 @@ class AlarmPV(AlarmNode):
         return lineList
 
 
-class InclusionMarker(Node):
+class InclusionMarker(BaseNode):
     """
     Marker for indicating file inclusions
     """
 
     def __init__(self, filename, sortKey=0):
-        super().__init__()
+        super().__init__(sortKey=sortKey)
         self.filename = filename
-        self.sortKey = sortKey
         self._xmlType = "xi:include"
-
-    @property
-    def sortKey(self):
-        return self._sortKey
-
-    @sortKey.setter
-    def sortKey(self, newKey):
-        self._sortKey = str(newKey)
 
     def get_xml_element(self, ext=None):
         """

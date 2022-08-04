@@ -8,10 +8,9 @@ add more tests
 import copy
 import os
 import unittest
-from treelib.exceptions import DuplicatedNodeIdError
 
 import phoebusalarm.alhparser as alh
-from phoebusalarm.alarmtree import AlarmTree
+from phoebusalarm.alarmtree import AlarmTree, DuplicatedNodeIdError
 from phoebusalarm.alarmnodes import AlarmPV
 
 

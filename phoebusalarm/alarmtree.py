@@ -39,27 +39,61 @@ Example Usage:
 
 """
 
+from collections import namedtuple
 from operator import attrgetter
 import warnings
 import xml.etree.ElementTree as ET
 import xml.dom.minidom as minidom
 
-from treelib import Tree
+from .alarmnodes import (BaseNode, AlarmNode, AlarmPV, InclusionMarker)
 
-from .alarmnodes import (AlarmNode, AlarmPV, InclusionMarker)
+TreeEntry = namedtuple('TreeEntry', ['node', 'parentId', 'children'])
 
 
-class AlarmTree(Tree):
+class DuplicatedNodeIdError(Exception):
+    """Exception thrown if an id already exists in the tree."""
+    pass
+
+
+class AlarmTree:
     """
     Tree to hold the alarm configuration
     """
+    def __init__(self, configName="Accelerator"):
+        # dictionary of form id: [Node object, parent_id, [children]]
+        self.nodes = {}
 
-    def __init__(self, configName="", tree=None, deep=False,
-                 identifier=None):
-        super().__init__(tree=tree, deep=deep, identifier=identifier)
-        # create a root node
-        if configName:
-            super().create_node(tag=configName, identifier=configName)
+        # set a root node
+        self.root = None
+        rootNode = BaseNode(tag=configName, identifier=configName)
+        self.add_node(rootNode, None)
+
+    def add_node(self, node, parent=None):
+        try:
+            if node.id in self.nodes:
+                raise DuplicatedNodeIdError("Can't create node "
+                                            "with ID '%s'" % node.id)
+        except (AttributeError, TypeError):
+            raise TypeError("node object must have an id attribute")
+
+        pid = self.id_from_node_or_str(parent)
+
+        if pid is None:
+            if self.root is not None:
+                raise ValueError("A tree takes one root only.")
+            else:
+                self.root = node.id
+        elif pid not in self.nodes:
+            raise ValueError("Parent node '%s' is not in the tree" % pid)
+
+        self.nodes[node.id] = TreeEntry(node, pid, [])
+
+        if pid is not None:
+            self.nodes[pid].children.append(node.id)
+
+    def all_nodes(self):
+        """A list of all nodes"""
+        return [entry.node for entry in self.nodes.values()]
 
     def create_node(self, name, parent=None, tag=None, sortKey=0):
         """
@@ -86,10 +120,9 @@ class AlarmTree(Tree):
 
         """
 
-        pid = parent.identifier if isinstance(parent, self.node_class) else parent
+        pid = self.id_from_node_or_str(parent)
+
         if pid is None:
-            if self.root is None:
-                super().create_node(tag="Accelerator", identifier="Accelerator")
             pid = self.root
 
         identifier = pid+"/"+name
@@ -186,7 +219,7 @@ class AlarmTree(Tree):
             thisElement = thisNode.get_xml_element(ext=ext)
 
         for child in sorted(self.children(rootID), key=attrgetter('sortKey')):
-            childID = child.identifier
+            childID = child.id
             childElement = self.get_element_tree(childID, ext=ext)
             thisElement.append(childElement)
 
@@ -225,7 +258,7 @@ class AlarmTree(Tree):
             warnings.warn("creating invalid alh, alarm tree has more than one top group")
 
         for child in sorted(self.children(parentID), key=attrgetter('sortKey')):
-            childID = child.identifier
+            childID = child.id
             childLines = child.get_alh_lines(parent=parentName, ext=ext)
             childLines.append("")
             grandChildLines = self.get_alh_lines(childID, ext=ext)
@@ -233,6 +266,15 @@ class AlarmTree(Tree):
             lineList.extend(grandChildLines)
 
         return lineList
+
+    def get_node(self, pid):
+        return self.nodes[pid].node if pid is not None else None
+
+    def children(self, parent):
+        "get list of children nodes for the parent"
+        pid = self.id_from_node_or_str(parent)
+        childList = [self.nodes[cid].node for cid in self.nodes[pid].children]
+        return childList
 
     def get_xml_string(self, forceXMLext=False):
         """get the tree as an xml string"""
@@ -258,6 +300,41 @@ class AlarmTree(Tree):
         lineList = self.get_alh_lines(ext=ext)
 
         return "\n".join(lineList)
+
+    def id_from_node_or_str(self, node):
+        """
+        pass node object or id string and get the id string
+        """
+
+        try:
+            nid = node.id
+        except AttributeError:
+            nid = node
+        return nid
+
+    def parent(self, node):
+        """
+        get the parent of given node or node-id
+        """
+        nid = self.id_from_node_or_str(node)
+        pid = self.nodes[nid].parentId
+
+        parentNode = self.nodes[pid].node if pid is not None else None
+        return parentNode
+
+    def remove_node(self, node):
+        """
+        remove this node and its children, return number of removed nodes
+        """
+        nid = self.id_from_node_or_str(node)
+
+        removedNode = self.nodes.pop(nid)
+        numberRemoved = 1
+        for node in removedNode.children:
+            removedChildren = self.remove_node(node)
+            numberRemoved += removedChildren
+
+        return numberRemoved
 
     def write_xml(self, outputPath, forceXMLext=False):
         """

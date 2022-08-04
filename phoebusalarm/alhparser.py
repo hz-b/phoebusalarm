@@ -34,9 +34,7 @@ these process_functions.
 import logging
 import os
 
-from treelib.exceptions import DuplicatedNodeIdError
-
-from phoebusalarm.alarmtree import AlarmTree
+from phoebusalarm.alarmtree import AlarmTree, DuplicatedNodeIdError
 from phoebusalarm.alarmnodes import AlarmPV
 from phoebusalarm.alarmfilter import AlarmFilter
 
