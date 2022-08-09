@@ -24,10 +24,12 @@ import re
 from . import alh_export
 
 
-class AlarmFilter():
+class AlarmFilter:
     """Abstraction for the filter to ease conversion from and to alh FORCEPV"""
-    def __init__(self, expr, value=1, A="", B="", C="", D="", E="", F="",
-                 enabling=True):
+
+    def __init__(
+        self, expr, value=1, A="", B="", C="", D="", E="", F="", enabling=True
+    ):
         """
         Create a new alarm filter object.
 
@@ -67,12 +69,7 @@ class AlarmFilter():
         self.expr = expr
         self.value = value
         self.enabling = enabling
-        self.replacements = {"A": A,
-                             "B": B,
-                             "C": C,
-                             "D": D,
-                             "E": E,
-                             "F": F}
+        self.replacements = {"A": A, "B": B, "C": C, "D": D, "E": E, "F": F}
 
     def get_alh_force(self, latch=True):
         """
@@ -95,17 +92,21 @@ class AlarmFilter():
         value = int(self.value) if isinstance(self.value, bool) else self.value
 
         if any(self.replacements.values()):
-            lines = ["$FORCEPV CALC {mask} {val} NE".format(mask=forceMask, val=value),
-                     "$FORCEPV_CALC {expr}".format(expr=self.expr)]
+            lines = [
+                "$FORCEPV CALC {mask} {val} NE".format(mask=forceMask, val=value),
+                "$FORCEPV_CALC {expr}".format(expr=self.expr),
+            ]
             for key, pv in sorted(self.replacements.items()):
                 if pv:
                     line = "$FORCEPV_CALC_{key} {pv}".format(key=key, pv=pv)
                     lines.append(line)
 
         else:
-            lines = ["$FORCEPV {expr} {mask} {val} NE".format(expr=self.expr,
-                                                              mask=forceMask,
-                                                              val=value)]
+            lines = [
+                "$FORCEPV {expr} {mask} {val} NE".format(
+                    expr=self.expr, mask=forceMask, val=value
+                )
+            ]
 
         return lines
 
@@ -124,7 +125,7 @@ class AlarmFilter():
         else:
             fmtString = "({expr}) != {val}"
 
-        if self.value is True:   # important, don't just check if self.value
+        if self.value is True:  # important, don't just check if self.value
             if self.enabling:
                 fmtString = "{expr}"
             else:
@@ -136,8 +137,8 @@ class AlarmFilter():
 
             expr = expr.format(**self.replacements)
         else:  # if no replacements are given, no need for ()
-            fmtString = fmtString.replace('(', '')
-            fmtString = fmtString.replace(')', '')
+            fmtString = fmtString.replace("(", "")
+            fmtString = fmtString.replace(")", "")
 
         filterStr = fmtString.format(expr=expr, val=self.value)
 

@@ -45,13 +45,14 @@ import warnings
 import xml.etree.ElementTree as ET
 import xml.dom.minidom as minidom
 
-from .alarmnodes import (BaseNode, AlarmNode, AlarmPV, InclusionMarker)
+from .alarmnodes import BaseNode, AlarmNode, AlarmPV, InclusionMarker
 
-TreeEntry = namedtuple('TreeEntry', ['node', 'parentId', 'children'])
+TreeEntry = namedtuple("TreeEntry", ["node", "parentId", "children"])
 
 
 class DuplicatedNodeIdError(Exception):
     """Exception thrown if an id already exists in the tree."""
+
     pass
 
 
@@ -59,6 +60,7 @@ class AlarmTree:
     """
     Tree to hold the alarm configuration
     """
+
     def __init__(self, configName="Accelerator"):
         # dictionary of form id: [Node object, parent_id, [children]]
         self.nodes = {}
@@ -71,8 +73,9 @@ class AlarmTree:
     def add_node(self, node, parent=None):
         try:
             if node.id in self.nodes:
-                raise DuplicatedNodeIdError("Can't create node "
-                                            "with ID '%s'" % node.id)
+                raise DuplicatedNodeIdError(
+                    "Can't create node " "with ID '%s'" % node.id
+                )
         except (AttributeError, TypeError):
             raise TypeError("node object must have an id attribute")
 
@@ -125,9 +128,10 @@ class AlarmTree:
         if pid is None:
             pid = self.root
 
-        identifier = pid+"/"+name
-        alarmNode = AlarmNode(name=name, identifier=identifier, tag=tag,
-                              sortKey=sortKey)
+        identifier = pid + "/" + name
+        alarmNode = AlarmNode(
+            name=name, identifier=identifier, tag=tag, sortKey=sortKey
+        )
         self.add_node(alarmNode, pid)
 
         return alarmNode
@@ -211,14 +215,13 @@ class AlarmTree:
         """
 
         if rootID is None or rootID == self.root:
-            thisElement = ET.Element("config",
-                                     name=self.get_node(self.root).tag)
+            thisElement = ET.Element("config", name=self.get_node(self.root).tag)
             rootID = self.root
         else:
             thisNode = self.get_node(rootID)
             thisElement = thisNode.get_xml_element(ext=ext)
 
-        for child in sorted(self.children(rootID), key=attrgetter('sortKey')):
+        for child in sorted(self.children(rootID), key=attrgetter("sortKey")):
             childID = child.id
             childElement = self.get_element_tree(childID, ext=ext)
             thisElement.append(childElement)
@@ -255,9 +258,11 @@ class AlarmTree:
             parentName = parentNode.tag
 
         if parentID == self.root and len(self.children(parentID)) > 1:
-            warnings.warn("creating invalid alh, alarm tree has more than one top group")
+            warnings.warn(
+                "creating invalid alh, alarm tree has more than one top group"
+            )
 
-        for child in sorted(self.children(parentID), key=attrgetter('sortKey')):
+        for child in sorted(self.children(parentID), key=attrgetter("sortKey")):
             childID = child.id
             childLines = child.get_alh_lines(parent=parentName, ext=ext)
             childLines.append("")
@@ -279,13 +284,13 @@ class AlarmTree:
     def get_xml_string(self, forceXMLext=False):
         """get the tree as an xml string"""
         if forceXMLext:
-            ext = '.xml'
+            ext = ".xml"
         else:
             ext = None
 
         # get elements and make a pretty xml
         rootElement = self.get_element_tree(ext=ext)
-        roughString = ET.tostring(rootElement, 'utf-8')
+        roughString = ET.tostring(rootElement, "utf-8")
         reparsed = minidom.parseString(roughString)
         prettyString = reparsed.toprettyxml(indent="  ")
         return prettyString
@@ -293,7 +298,7 @@ class AlarmTree:
     def get_alh_string(self, forceALHext=True):
         """get the tree as alarm handler string"""
         if forceALHext:
-            ext = '.alh'
+            ext = ".alh"
         else:
             ext = None
 
@@ -368,4 +373,5 @@ class AlarmTree:
 
 if __name__ == "__main__":
     import doctest
+
     doctest.testmod()

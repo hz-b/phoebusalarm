@@ -47,11 +47,10 @@ class TestEndToEnd(unittest.TestCase):
     """
     Test building of an entire tree and compare to xml exported from phoebus
     """
+
     outFile = "unittest_output"
-    referenceXML = os.path.join(os.path.dirname(__file__),
-                                "reference_phoebus.xml")
-    referenceALH = os.path.join(os.path.dirname(__file__),
-                                "reference_alh.alh")
+    referenceXML = os.path.join(os.path.dirname(__file__), "reference_phoebus.xml")
+    referenceALH = os.path.join(os.path.dirname(__file__), "reference_alh.alh")
 
     def setUp(self):
         self.alarmTree = AlarmTree(configName="Test")
@@ -122,5 +121,5 @@ class TestEndToEnd(unittest.TestCase):
         os.remove(self.outFile)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

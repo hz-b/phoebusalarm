@@ -58,7 +58,7 @@ def format_display(display):
         if parseResult.query:
             macroDict = urllib.parse.parse_qs(parseResult.query)
             pairList = [key + "=" + macroDict[key][0] for key in sorted(macroDict)]
-            macroStr = '-m "'+','.join(pairList)+'"'
+            macroStr = '-m "' + ",".join(pairList) + '"'
 
         cmd = " ".join(filter(None, [EDM_COMMAND, macroStr, edlName]))
         line = "$COMMAND {cmd}".format(cmd=cmd)

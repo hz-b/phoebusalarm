@@ -48,14 +48,14 @@ class ParsingLogger(logging.Logger):
 
     Logs the file and lineno at info level for each warnig or error.
     """
+
     def __init__(self, name):
         super().__init__(name)
         self.filename = ""
         self.lineno = 0
 
     def set_position(self, filename, lineno):
-        """update the position in the file
-        """
+        """update the position in the file"""
         self.filename = filename
         self.lineno = lineno
 
@@ -116,22 +116,24 @@ def parse_alh(filepath, configName="Accelerator", userDispatch=None):
     lastCall = None
 
     # functions to call, depending on keyword
-    dispatch = {"GROUP": process_group,
-                "INCLUDE": process_include,
-                "$ALIAS": process_alias,
-                "CHANNEL": process_channel,
-                "$SEVRPV": process_sevrpv,
-                "$GUIDANCE": process_guidance,
-                "$COMMAND": process_command,
-                "$SEVRCOMMAND": process_sevrcommand,
-                "$ALARMCOUNTFILTER": process_alarmcount,
-                "$FORCEPV": process_forcepv,
-                "$FORCEPV_CALC": process_forcepvcalc,
-                "$STATCOMMAND": process_statcommand,
-                "$HEARTBEATPV": process_heartbeat,
-                "$ACKPV": process_ignored,
-                "$BEEPSEVERITY": process_beep,
-                "$BEEPSEVR": process_beep}
+    dispatch = {
+        "GROUP": process_group,
+        "INCLUDE": process_include,
+        "$ALIAS": process_alias,
+        "CHANNEL": process_channel,
+        "$SEVRPV": process_sevrpv,
+        "$GUIDANCE": process_guidance,
+        "$COMMAND": process_command,
+        "$SEVRCOMMAND": process_sevrcommand,
+        "$ALARMCOUNTFILTER": process_alarmcount,
+        "$FORCEPV": process_forcepv,
+        "$FORCEPV_CALC": process_forcepvcalc,
+        "$STATCOMMAND": process_statcommand,
+        "$HEARTBEATPV": process_heartbeat,
+        "$ACKPV": process_ignored,
+        "$BEEPSEVERITY": process_beep,
+        "$BEEPSEVR": process_beep,
+    }
 
     if userDispatch is not None:
         dispatch.update(userDispatch)
@@ -143,9 +145,9 @@ def parse_alh(filepath, configName="Accelerator", userDispatch=None):
             logger.set_position(filepath, lineno)
             # check if continuation was requested by
             if continueData is not None:
-                currentNode, continueData = lastCall(line, alarmTree,
-                                                     currentNode,
-                                                     data=continueData)
+                currentNode, continueData = lastCall(
+                    line, alarmTree, currentNode, data=continueData
+                )
             # non-comment, non-empty lines
             elif not line.isspace() and not line.startswith("#"):
                 # cleanup whitespace
@@ -165,19 +167,21 @@ def parse_alh(filepath, configName="Accelerator", userDispatch=None):
                 logger.debug("Keyword: %s, with args: %s", keyword, alhArgs)
                 # try to call the appropriate procces function
                 try:
-                    currentNode, continueData = dispatch[keyword](alhArgs,
-                                                                  alarmTree,
-                                                                  currentNode,
-                                                                  keyword=keyword)
+                    currentNode, continueData = dispatch[keyword](
+                        alhArgs, alarmTree, currentNode, keyword=keyword
+                    )
                     lastCall = dispatch[keyword]
                 except KeyError:
                     logger.error("can't handle keyword %s", keyword)
                 except DuplicatedNodeIdError as ex:
                     exStr = str(ex)
-                    logger.error("Alh contains duplicate groups, "
-                                 "combining them for phoebus. %s", exStr)
+                    logger.error(
+                        "Alh contains duplicate groups, "
+                        "combining them for phoebus. %s",
+                        exStr,
+                    )
                     idStart = exStr.find(" ID '")
-                    identifier = exStr[idStart+5:-1]
+                    identifier = exStr[idStart + 5 : -1]
                     currentNode = alarmTree.get_node(identifier)
                 except MalformedAlh as ex:
                     exStr = str(ex)
@@ -240,8 +244,11 @@ def process_channel(alhArgs, tree, currentNode, **kwargs):
     try:
         currentNode = tree.create_alarm(pvName, parent=parentId)
     except DuplicatedNodeIdError:
-        logger.error("PV %s already exists, adding this channel's settings to "
-                     "the previous instance", pvName)
+        logger.error(
+            "PV %s already exists, adding this channel's settings to "
+            "the previous instance",
+            pvName,
+        )
         currentNode = tree.get_node(pvName)
     try:
         mask = params[2]
@@ -250,22 +257,31 @@ def process_channel(alhArgs, tree, currentNode, **kwargs):
         if "T" in mask:
             currentNode.latch = False
         if "A" in mask:
-            logger.info("Ignoring part of mask %s for pv %s, "
-                        "because all phoebus alarms must be acknoledged",
-                        mask, pvName)
+            logger.info(
+                "Ignoring part of mask %s for pv %s, "
+                "because all phoebus alarms must be acknoledged",
+                mask,
+                pvName,
+            )
         if "L" in mask:
-            logger.info("Ignoring part of mask %s for pv %s, "
-                        "because phoebus will log all alarms",
-                        mask, pvName)
+            logger.info(
+                "Ignoring part of mask %s for pv %s, "
+                "because phoebus will log all alarms",
+                mask,
+                pvName,
+            )
     except IndexError:
         logger.debug("No mask for %s", pvName)
 
     propagate_filter(tree, parentId, currentNode)
 
     if currentNode.filter and not currentNode.enabled:
-        logger.warning("Manual check required: "
-                       "PV %s is disabled (channel mask), but group has forcePV. "
-                       "In Phoebus this PV will be always DISABLED.", pvName)
+        logger.warning(
+            "Manual check required: "
+            "PV %s is disabled (channel mask), but group has forcePV. "
+            "In Phoebus this PV will be always DISABLED.",
+            pvName,
+        )
 
     return currentNode, None
 
@@ -273,8 +289,8 @@ def process_channel(alhArgs, tree, currentNode, **kwargs):
 def process_include(alhArgs, tree, currentNode, **kwargs):
     parentName, fileName = alhArgs.split()
     parentId = find_parent(tree, currentNode, parentName)
-#    xmlName = os.path.splitext(fileName)[0]+'.xml'
-# can't do this here, because recursion will need the original file name
+    #    xmlName = os.path.splitext(fileName)[0]+'.xml'
+    # can't do this here, because recursion will need the original file name
     tree.create_inclusion(fileName, parent=parentId)
     return currentNode, None
 
@@ -294,8 +310,9 @@ def process_alias(alhArgs, tree, currentNode, **kwargs):
         parent = tree.parent(oldID)
 
         if tree.children(oldID):
-            logger.error("Can't rename node %s to %s, "
-                         "because it has children", oldID, alias)
+            logger.error(
+                "Can't rename node %s to %s, " "because it has children", oldID, alias
+            )
         else:
             tree.remove_node(oldID)
             newNode = tree.create_node(alias, parent=parent, tag=oldName)
@@ -324,19 +341,28 @@ def process_sevrcommand(alhArgs, tree, currentNode, **kwargs):
     commandName = command_name(command)
     if "UP" in sevr:
         if not sevr == "UP_ANY":
-            logger.info("%s: phoebus automated action will be executed for "
-                        "any alarm increase instead of %s",
-                        currentNode.identifier, sevr)
+            logger.info(
+                "%s: phoebus automated action will be executed for "
+                "any alarm increase instead of %s",
+                currentNode.identifier,
+                sevr,
+            )
 
         if any([command in action.details for action in currentNode.actions]):
-            logging.info("ignoring duplicate action for %s for severity %s",
-                         currentNode.identifier, sevr)
+            logging.info(
+                "ignoring duplicate action for %s for severity %s",
+                currentNode.identifier,
+                sevr,
+            )
         else:
             currentNode.add_auto_action(commandName, 0, command)
     else:
-        logger.warning("No phoebus equivalent for severity down commands, "
-                       "ignoring severity command %s for %s",
-                       alhArgs, currentNode.identifier)
+        logger.warning(
+            "No phoebus equivalent for severity down commands, "
+            "ignoring severity command %s for %s",
+            alhArgs,
+            currentNode.identifier,
+        )
     return currentNode, None
 
 
@@ -376,16 +402,20 @@ def process_alarmcount(alhArgs, tree, currentNode, **kwargs):
 def process_statcommand(alhArgs, tree, currentNode, **kwargs):
     status, command = alhArgs.split(maxsplit=1)
     commandName = command_name(command)
-    logger.warning("Replacing STATCOMMAND with automated action for %s, "
-                   "please review manually",
-                   currentNode.identifier)
+    logger.warning(
+        "Replacing STATCOMMAND with automated action for %s, " "please review manually",
+        currentNode.identifier,
+    )
     currentNode.add_auto_action(commandName, 0, command)
 
 
 def process_beep(alhArgs, tree, currentNode, keyword, **kwargs):
-    logger.warning("Ignoring %s for %s, "
-                   "severity based annunication filtering not possible in phoebus",
-                   keyword, currentNode.identifier)
+    logger.warning(
+        "Ignoring %s for %s, "
+        "severity based annunication filtering not possible in phoebus",
+        keyword,
+        currentNode.identifier,
+    )
 
 
 def process_forcepv(alhArgs, tree, currentNode, **kwargs):
@@ -394,28 +424,33 @@ def process_forcepv(alhArgs, tree, currentNode, **kwargs):
     forcePV, forceValue, resetValue, forceEnables = get_forcepv_args(args)
 
     if resetValue != "NE":
-        logger.warning("PV %s uses resetValue %s for force, "
-                       "phoebus filter will reset immidiately once "
-                       "forcePV != forceValue",
-                       currentNode.identifier, resetValue)
+        logger.warning(
+            "PV %s uses resetValue %s for force, "
+            "phoebus filter will reset immidiately once "
+            "forcePV != forceValue",
+            currentNode.identifier,
+            resetValue,
+        )
 
     try:
         nodeEnabled = currentNode.enabled
-    except AttributeError:    # nodes (groups) don't have enabled flag
+    except AttributeError:  # nodes (groups) don't have enabled flag
         nodeEnabled = True
 
     if forceEnables == nodeEnabled:
-        logger.warning("Skipping forcePV without change in mask for PV %s",
-                       currentNode.identifier)
+        logger.warning(
+            "Skipping forcePV without change in mask for PV %s", currentNode.identifier
+        )
         filterObj = ""
     else:
         currentNode.enabled = True
         filterObj = create_alarm_filter(forcePV, forceValue, forceEnables)
 
-    try:   # check for existing filter, if this a node, it may not have a filter object
+    try:  # check for existing filter, if this a node, it may not have a filter object
         if currentNode.filter:
-            logger.warning("Replacing inherited filter/ForcePV for %s",
-                           currentNode.identifier)
+            logger.warning(
+                "Replacing inherited filter/ForcePV for %s", currentNode.identifier
+            )
     except AttributeError:
         pass
 
@@ -458,8 +493,12 @@ def propagate_filter(tree, parentId, currentNode):
         parentNode = tree.get_node(parentId)
         filterStr = parentNode.filter
         currentNode.filter = filterStr
-        logger.info("Setting ForcePV for %s to %s from parent %s",
-                    currentNode.identifier, filterStr, parentNode.identifier)
+        logger.info(
+            "Setting ForcePV for %s to %s from parent %s",
+            currentNode.identifier,
+            filterStr,
+            parentNode.identifier,
+        )
     except AttributeError:
         pass
 
@@ -490,11 +529,9 @@ def create_alarm_filter(forcePV, forceValue, filterEnables):
             filterEnables = bool(forceValue) == filterEnables
             forceValue = 1
 
-        filterObj = AlarmFilter(expr="{expr}", value=forceValue,
-                                enabling=filterEnables)
+        filterObj = AlarmFilter(expr="{expr}", value=forceValue, enabling=filterEnables)
     else:
-        filterObj = AlarmFilter(expr=forcePV, value=forceValue,
-                                enabling=filterEnables)
+        filterObj = AlarmFilter(expr=forcePV, value=forceValue, enabling=filterEnables)
 
     return filterObj
 
@@ -521,7 +558,9 @@ def find_parent(tree, currentNode, parentName):
         while parentName != currentNode.tag:
             currentNode = tree.parent(currentNode.identifier)
             if currentNode is None:
-                raise MalformedAlh("Unable to locate parent: {par}".format(par=parentName))
+                raise MalformedAlh(
+                    "Unable to locate parent: {par}".format(par=parentName)
+                )
         parentId = currentNode.identifier
 
     return parentId

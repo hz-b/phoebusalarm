@@ -35,16 +35,17 @@ from . import alh_export
 from .alarmfilter import AlarmFilter
 
 # define for more clarity later
-Guidance = namedtuple("guidance", ['title', 'details'])
-Display = namedtuple("display", ['title', 'details'])
-Command = namedtuple("command", ['title', 'details'])
-Action = namedtuple("automated_action", ['title', 'details', 'delay'])
+Guidance = namedtuple("guidance", ["title", "details"])
+Display = namedtuple("display", ["title", "details"])
+Command = namedtuple("command", ["title", "details"])
+Action = namedtuple("automated_action", ["title", "details", "delay"])
 
 
 class BaseNode:
     """
     Common funcitonality of "Groups" and "Inclusions"
     """
+
     def __init__(self, identifier=None, tag=None, sortKey=0):
         """
         Constructor
@@ -90,6 +91,7 @@ class AlarmNode(BaseNode):
     """
     Representation of an alarm tree node
     """
+
     def __init__(self, name, identifier=None, tag=None, sortKey=0):
         """
         Constructor
@@ -170,8 +172,9 @@ class AlarmNode(BaseNode):
             parseResult = urllib.parse.urlparse(path, scheme="file")
 
             if not parseResult.path.startswith("/"):
-                raise ValueError("absolute path required to use macros "
-                                 + parseResult.path)
+                raise ValueError(
+                    "absolute path required to use macros " + parseResult.path
+                )
 
             if not parseResult.query:
                 macros = OrderedDict(sorted(macros.items()))
@@ -217,8 +220,7 @@ class AlarmNode(BaseNode):
         if not isinstance(recipients, str):
             recipients = ",".join(recipients)
 
-        self.actions.append(Action(title, "mailto:{0}".format(recipients),
-                                   delay))
+        self.actions.append(Action(title, "mailto:{0}".format(recipients), delay))
 
     def add_sevr_pv(self, pv, title="Severity PV"):
         """
@@ -281,6 +283,7 @@ class AlarmPV(AlarmNode):
     """
     Representation of an alarm PV
     """
+
     def __init__(self, channelPV, **kwargs):
         super().__init__(name=channelPV, identifier=channelPV, **kwargs)
         self.desc = ""
@@ -354,23 +357,26 @@ class AlarmPV(AlarmNode):
 
         mask = alh_export.make_mask(defaultEnabled, self.latch)
 
-        lineList[0] = "CHANNEL {par} {pv} {mask}".format(par=parent,
-                                                         pv=self._name,
-                                                         mask=mask)
+        lineList[0] = "CHANNEL {par} {pv} {mask}".format(
+            par=parent, pv=self._name, mask=mask
+        )
 
         if self.desc:
             lineList.insert(1, "$ALIAS {0}".format(self.desc))
 
         if self.delay > 0:
-            line = "$ALARMCOUNTFILTER {cnt} {dly}".format(cnt=self.count,
-                                                          dly=self.delay)
+            line = "$ALARMCOUNTFILTER {cnt} {dly}".format(
+                cnt=self.count, dly=self.delay
+            )
             lineList.append(line)
 
         if self.filter:
             try:
                 lineList.extend(self.filter.get_alh_force(self.latch))
             except AttributeError:
-                raise ValueError("can't create alh force PV from %s" % type(self.filter))
+                raise ValueError(
+                    "can't create alh force PV from %s" % type(self.filter)
+                )
 
         return lineList
 
@@ -404,9 +410,11 @@ class InclusionMarker(BaseNode):
             linkTarget = os.path.splitext(self.filename)[0] + ext
         else:
             linkTarget = self.filename
-        xmlAttributes = {"href": linkTarget,
-                         "xpointer": "element(/1/1)",
-                         "xmlns:xi": "http://www.w3.org/2001/XInclude"}
+        xmlAttributes = {
+            "href": linkTarget,
+            "xpointer": "element(/1/1)",
+            "xmlns:xi": "http://www.w3.org/2001/XInclude",
+        }
         xmlElement = ET.Element(self._xmlType, attrib=xmlAttributes)
         return xmlElement
 
