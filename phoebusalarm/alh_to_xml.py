@@ -84,13 +84,9 @@ def recursive_alh_parse(
     if singleFile and ignoreExisting:
         raise ValueError("must overwrite exsiting files, if creating a single output")
 
-    overwrite = not ignoreExisting
-
-    inputDir, inputName = os.path.split(inPath)
-    outputDir, outputName = os.path.split(outPath)
-
-    if configName is None:
-        configName = os.path.splitext(inputName)[0]
+    inputDir, outputDir, configName = path_and_config_from_files(
+        inPath, outPath, configName
+    )
 
     baseTree = parse_alh(inPath, configName)
 
@@ -107,7 +103,7 @@ def recursive_alh_parse(
             subInPath = os.path.join(inputDir, inclusion.filename)
             subOutPath = os.path.join(outputDir, subOutName)
 
-        if overwrite or not os.path.isfile(subOutPath):
+        if not (os.path.isfile(subOutPath) and ignoreExisting):
             subConfigName = baseTree.parent(inclusion.identifier).identifier
             subTree = recursive_alh_parse(
                 subInPath, subOutPath, singleFile, configName=subConfigName
@@ -122,7 +118,25 @@ def recursive_alh_parse(
     return baseTree
 
 
+def path_and_config_from_files(inPath, outPath, configName=None):
+    """
+    split of input and output dir from their path and determine a configName
+    from in input file name if it is not given.
+    """
+    inputDir, inputName = os.path.split(inPath)
+    outputDir = os.path.split(outPath)[0]
+
+    if configName is None:
+        configName = os.path.splitext(inputName)[0]
+
+    return inputDir, outputDir, configName
+
+
 def alh_to_xml():
+    """
+    Main function and script entry point
+    """
+
     dscString = (
         "Converts alarm handler config files into phoebus compatible "
         "xml files. Optionally recurses through the files "

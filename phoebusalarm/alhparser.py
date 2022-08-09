@@ -60,6 +60,7 @@ class ParsingLogger(logging.Logger):
         self.lineno = lineno
 
     def log_position(self):
+        """log the current positon in the logger"""
         super().info("In file: %s at line %d", self.filename, self.lineno)
 
     def warning(self, msg, *args, **kwargs):
@@ -70,6 +71,7 @@ class ParsingLogger(logging.Logger):
         self.log_position()
         super().error(msg, *args, **kwargs)
 
+    # pylint: disable=invalid-name
     def exception(self, msg, *args, exc_info=True, **kwargs):
         self.log_position()
         super().error(msg, *args, exc_info=exc_info, **kwargs)
@@ -113,7 +115,7 @@ def parse_alh(filepath, configName="Accelerator", userDispatch=None):
     alarmTree = AlarmTree(configName)
     currentNode = alarmTree.get_node(alarmTree.root)
     continueData = None
-    lastCall = None
+    lastCall = process_example
 
     # functions to call, depending on keyword
     dispatch = {
@@ -143,7 +145,7 @@ def parse_alh(filepath, configName="Accelerator", userDispatch=None):
 
         for lineno, line in enumerate(alhFile):
             logger.set_position(filepath, lineno)
-            # check if continuation was requested by
+            # check if continuation was requested by the process function
             if continueData is not None:
                 currentNode, continueData = lastCall(
                     line, alarmTree, currentNode, data=continueData
@@ -153,17 +155,7 @@ def parse_alh(filepath, configName="Accelerator", userDispatch=None):
                 # cleanup whitespace
                 line = line.strip()
 
-                try:
-                    keyword, alhArgs = line.split(maxsplit=1)
-                except ValueError:
-                    keyword = line
-                    alhArgs = ""
-
-                # treat all FORCEPV keywords as one with different arguments
-                if "$FORCEPV_CALC" in keyword:
-                    extras = keyword.replace("$FORCEPV_CALC", "CALC")
-                    keyword = "$FORCEPV_CALC"
-                    alhArgs = " ".join((extras, alhArgs))
+                keyword, alhArgs = extract_key_and_args(line)
                 logger.debug("Keyword: %s, with args: %s", keyword, alhArgs)
                 # try to call the appropriate procces function
                 try:
@@ -174,25 +166,44 @@ def parse_alh(filepath, configName="Accelerator", userDispatch=None):
                 except KeyError:
                     logger.error("can't handle keyword %s", keyword)
                 except DuplicatedNodeIdError as ex:
-                    exStr = str(ex)
                     logger.error(
                         "Alh contains duplicate groups, "
                         "combining them for phoebus. %s",
-                        exStr,
+                        str(ex),
                     )
-                    idStart = exStr.find(" ID '")
-                    identifier = exStr[idStart + 5 : -1]
-                    currentNode = alarmTree.get_node(identifier)
+                    currentNode = alarmTree.get_node(ex.nodeId)
                 except MalformedAlh as ex:
-                    exStr = str(ex)
-                    logger.error("Malformed input, aborting file parse: %s", exStr)
+                    logger.error("Malformed input, aborting file parse: %s", str(ex))
                     break
 
     return alarmTree
 
 
+def extract_key_and_args(line):
+    """
+    separate the keyword for the dispatch and the arguments from the given line
+    """
+
+    try:
+        keyword, alhArgs = line.split(maxsplit=1)
+    except ValueError:
+        keyword = line
+        alhArgs = ""
+
+    # treat all FORCEPV keywords as one with different arguments
+    if "$FORCEPV_CALC" in keyword:
+        extras = keyword.replace("$FORCEPV_CALC", "CALC")
+        keyword = "$FORCEPV_CALC"
+        alhArgs = " ".join((extras, alhArgs))
+
+    return keyword, alhArgs
+
+
 # ---- process functions -----
 # each handles a specific alh keyword
+# all the process_<something> functions are similar, they don't need repetitive
+# docstrings and they will all have unsued args for a common signature
+# pylint: disable=unused-argument, missing-function-docstring
 def process_example(alhArgs, tree, currentNode, data=None, **kwargs):
     """
     An example process function. Modify the tree or currentNode as per your
@@ -224,9 +235,15 @@ def process_example(alhArgs, tree, currentNode, data=None, **kwargs):
         pre-processing. This is used in handling multiline guidances.
     """
 
+    raise NotImplementedError("Attempted calling example process function")
+
+    # this is only an example
+    # pylint: disable=unreachable
     return currentNode, data
 
 
+# see process_example
+# pylint: disable=unused-argument, missing-function-docstring
 def process_group(alhArgs, tree, currentNode, **kwargs):
     parentName, name = alhArgs.split()
     parentId = find_parent(tree, currentNode, parentName)
@@ -235,6 +252,8 @@ def process_group(alhArgs, tree, currentNode, **kwargs):
     return currentNode, None
 
 
+# see process_example
+# pylint: disable=unused-argument, missing-function-docstring
 def process_channel(alhArgs, tree, currentNode, **kwargs):
     params = alhArgs.split()
     pvName = params[1]
@@ -286,6 +305,8 @@ def process_channel(alhArgs, tree, currentNode, **kwargs):
     return currentNode, None
 
 
+# see process_example
+# pylint: disable=unused-argument, missing-function-docstring
 def process_include(alhArgs, tree, currentNode, **kwargs):
     parentName, fileName = alhArgs.split()
     parentId = find_parent(tree, currentNode, parentName)
@@ -295,18 +316,20 @@ def process_include(alhArgs, tree, currentNode, **kwargs):
     return currentNode, None
 
 
+# see process_example
+# pylint: disable=unused-argument, missing-function-docstring
 def process_alias(alhArgs, tree, currentNode, **kwargs):
     alias = alhArgs.strip()
     # for alarms, alias becomes the descriptions
     if isinstance(currentNode, AlarmPV):
         currentNode.desc = alias
     # only change groups if the alias is actually different
-    elif currentNode._name != alias:
+    elif currentNode.name != alias:
         # use the alias from alh as the name of the node (to use in phoebus)
         # and rember the original alh name only as an alias
         oldNode = currentNode
         oldID = oldNode.identifier
-        oldName = oldNode._name
+        oldName = oldNode.name
         parent = tree.parent(oldID)
 
         if tree.children(oldID):
@@ -330,12 +353,16 @@ def process_alias(alhArgs, tree, currentNode, **kwargs):
     return currentNode, None
 
 
+# see process_example
+# pylint: disable=unused-argument, missing-function-docstring
 def process_sevrpv(alhArgs, tree, currentNode, **kwargs):
     pvName = alhArgs.strip()
     currentNode.add_sevr_pv(pvName)
     return currentNode, None
 
 
+# see process_example
+# pylint: disable=unused-argument, missing-function-docstring
 def process_sevrcommand(alhArgs, tree, currentNode, **kwargs):
     sevr, command = alhArgs.split(maxsplit=1)
     commandName = command_name(command)
@@ -348,7 +375,7 @@ def process_sevrcommand(alhArgs, tree, currentNode, **kwargs):
                 sevr,
             )
 
-        if any([command in action.details for action in currentNode.actions]):
+        if any(command in action.details for action in currentNode.actions):
             logging.info(
                 "ignoring duplicate action for %s for severity %s",
                 currentNode.identifier,
@@ -366,6 +393,8 @@ def process_sevrcommand(alhArgs, tree, currentNode, **kwargs):
     return currentNode, None
 
 
+# see process_example
+# pylint: disable=unused-argument, missing-function-docstring
 def process_guidance(alhArgs, tree, currentNode, data=None, **kwargs):
     # first call to guidance
     if data is None:
@@ -386,12 +415,16 @@ def process_guidance(alhArgs, tree, currentNode, data=None, **kwargs):
     return currentNode, data
 
 
+# see process_example
+# pylint: disable=unused-argument, missing-function-docstring
 def process_command(alhArgs, tree, currentNode, **kwargs):
     commandName = command_name(alhArgs)
     currentNode.add_command(title=commandName, details=alhArgs)
     return currentNode, None
 
 
+# see process_example
+# pylint: disable=unused-argument, missing-function-docstring
 def process_alarmcount(alhArgs, tree, currentNode, **kwargs):
     count, time = alhArgs.split()
     currentNode.count = int(count)
@@ -399,16 +432,22 @@ def process_alarmcount(alhArgs, tree, currentNode, **kwargs):
     return currentNode, None
 
 
+# see process_example
+# pylint: disable=unused-argument, missing-function-docstring
 def process_statcommand(alhArgs, tree, currentNode, **kwargs):
     status, command = alhArgs.split(maxsplit=1)
     commandName = command_name(command)
     logger.warning(
-        "Replacing STATCOMMAND with automated action for %s, " "please review manually",
+        "Replacing STATCOMMAND with automated action for %s, for status %s "
+        "please review manually",
         currentNode.identifier,
+        status,
     )
     currentNode.add_auto_action(commandName, 0, command)
 
 
+# see process_example
+# pylint: disable=unused-argument, missing-function-docstring
 def process_beep(alhArgs, tree, currentNode, keyword, **kwargs):
     logger.warning(
         "Ignoring %s for %s, "
@@ -418,6 +457,8 @@ def process_beep(alhArgs, tree, currentNode, keyword, **kwargs):
     )
 
 
+# see process_example
+# pylint: disable=unused-argument, missing-function-docstring
 def process_forcepv(alhArgs, tree, currentNode, **kwargs):
     args = alhArgs.split()
 
@@ -459,6 +500,8 @@ def process_forcepv(alhArgs, tree, currentNode, **kwargs):
     return currentNode, None
 
 
+# see process_example
+# pylint: disable=unused-argument, missing-function-docstring
 def process_forcepvcalc(alhArgs, tree, currentNode, **kwargs):
     """
     handle all FORCEPV_CALC... statements
@@ -478,11 +521,15 @@ def process_forcepvcalc(alhArgs, tree, currentNode, **kwargs):
     return currentNode, None
 
 
+# see process_example
+# pylint: disable=unused-argument, missing-function-docstring
 def process_heartbeat(alhArgs, tree, currentNode, **kwargs):
     logger.warning("Ignoring Heartbeat PV, must be added via settings.ini")
     return currentNode, None
 
 
+# see process_example
+# pylint: disable=unused-argument, missing-function-docstring
 def process_ignored(alhArgs, tree, currentNode, keyword, **kwargs):
     logger.warning("No equivalent for %s in phoebus", keyword)
     return currentNode, None
@@ -540,9 +587,9 @@ def command_name(commandString):
     """
     get the name of a command from the full command line call
     """
-    command, *args = commandString.split()
-    path, file = os.path.split(command)
-    commandName, ext = os.path.splitext(file)
+    command = commandString.split()[0]
+    file = os.path.split(command)[1]
+    commandName = os.path.splitext(file)[0]
     return commandName
 
 

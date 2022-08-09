@@ -27,6 +27,8 @@ from . import alh_export
 class AlarmFilter:
     """Abstraction for the filter to ease conversion from and to alh FORCEPV"""
 
+    # I am unsure if combining A-F into a dict before passing is better
+    # pylint: disable=too-many-arguments
     def __init__(
         self, expr, value=1, A="", B="", C="", D="", E="", F="", enabling=True
     ):

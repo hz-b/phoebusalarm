@@ -41,6 +41,18 @@ Command = namedtuple("command", ["title", "details"])
 Action = namedtuple("automated_action", ["title", "details", "delay"])
 
 
+def id_from_node_or_str(node):
+    """
+    pass node object or id string and get the id string
+    """
+
+    try:
+        nid = node.identifier
+    except AttributeError:
+        nid = node
+    return nid
+
+
 class BaseNode:
     """
     Common funcitonality of "Groups" and "Inclusions"
@@ -62,12 +74,12 @@ class BaseNode:
         """
 
         if identifier is None:
-            self.id = str(uuid.uuid1())
+            self._id = str(uuid.uuid1())
         else:
-            self.id = identifier
+            self._id = identifier
 
         if tag is None:
-            self.tag = self.id
+            self.tag = self.identifier
         else:
             self.tag = tag
 
@@ -75,16 +87,21 @@ class BaseNode:
 
     @property
     def sortKey(self):
+        """
+        sortkey defines the order of nodes on export.
+        It is always a string, to allow comparison
+        """
         return self._sortKey
 
     @sortKey.setter
     def sortKey(self, newKey):
         self._sortKey = str(newKey)
 
-    # keep the old identifier for backwards compatiblity
+    # identifier should not be modified, read-only access to protected _id member
     @property
     def identifier(self):
-        return self.id
+        """unique ID of the node"""
+        return self._id
 
 
 class AlarmNode(BaseNode):
@@ -99,7 +116,7 @@ class AlarmNode(BaseNode):
         Parameters
         ----------
         name : string
-            The name of the node as used in phoebus.
+            The name of the node as used in phoebus. Will be the ALIAS in alh.
         identifier : string, optional
             A unique identifier of the Node. If None, a UUID will be created.
             The default is None.
@@ -121,6 +138,11 @@ class AlarmNode(BaseNode):
         self.actions = []
         self._xmlType = "component"
         self._name = name
+
+    @property
+    def name(self):
+        """name of the node in phoebus (Group ALIAS in alh)"""
+        return self._name
 
     def add_guidance(self, title, details):
         """
@@ -235,7 +257,7 @@ class AlarmNode(BaseNode):
         """
         self.actions.append(Action(title, "sevrpv:{0}".format(pv), 0))
 
-    def get_xml_element(self, **kwargs):
+    def get_xml_element(self, **kwargs):  # pylint: disable=unused-argument
         """
         convert the node to an element tree description to dump as xml
 
@@ -255,7 +277,20 @@ class AlarmNode(BaseNode):
 
         return xmlElement
 
-    def get_alh_lines(self, parent, **kwargs):
+    def get_alh_lines(self, parent, **kwargs):  # pylint: disable=unused-argument
+        """
+        return a list of alh lines representing the node
+
+        Parameters
+        ----------
+        parent : string
+            The tag of the parent node.
+
+        Returns
+        -------
+        lineList : List of Strings
+            A list of lines which can be written to a file, representing this node.
+        """
         lineList = ["GROUP {0} {1}".format(parent, self.tag)]
 
         if self._name != self.tag:
@@ -280,6 +315,8 @@ class AlarmNode(BaseNode):
 
 
 class AlarmPV(AlarmNode):
+    # I am okay with 8 instead of pylints max 7
+    # pylint: disable=too-many-instance-attributes
     """
     Representation of an alarm PV
     """
@@ -296,11 +333,32 @@ class AlarmPV(AlarmNode):
         self._xmlType = "pv"
 
     def add_filter(self, expr, value=1, replaceDict=None):
+        """
+        Add a filter condition to the PV, in the style of alh FORCE_PV.
+        This creates an AlarmFilter object and adds it as the filter.
+
+        Parameters
+        ----------
+        expr : str
+            a PV or an EPICS CALC like expression, such as A>B or A+B=C.
+            It must not contain constants for alh compatibility. The
+            expression is compared to the value, with the default 1, i.e., true.
+            If neither no replaceDict is given, expr is assumed to simply be a PV.
+        value : numeric or True, optional
+            give the value of expression to activate the filter at.
+            The default is 1. Use True if the expression is directly True/False,
+            i.e. 0 or 1. This will create a simpler Phoebus filter than using
+            1.
+        replaceDict : dict, optional
+            A dictionary containing the possible key A-F. The value for each
+            key is used to replace the corresponding variable in the expr.
+            The default is None.
+        """
         if replaceDict is None:
             replaceDict = {}
         self.filter = AlarmFilter(expr, value, **replaceDict)
 
-    def get_xml_element(self, **kwargs):
+    def get_xml_element(self, **kwargs):  # pylint: disable=unused-argument
         """
         convert the node to an element tree description to dump as xml
 
@@ -343,6 +401,24 @@ class AlarmPV(AlarmNode):
         return xmlElement
 
     def get_alh_lines(self, parent, **kwargs):
+        """
+        return a list of alh lines representing the node
+
+        Parameters
+        ----------
+        parent : string
+            The tag of the parent node.
+
+        Raises
+        ------
+        ValueError
+            If the filter of the node can not be represented as a FORCE_PV in alh.
+
+        Returns
+        -------
+        lineList : List of Strings
+            A list of lines which can be written to a file, representing this node.
+        """
         lineList = super().get_alh_lines(parent)
 
         try:
@@ -373,10 +449,10 @@ class AlarmPV(AlarmNode):
         if self.filter:
             try:
                 lineList.extend(self.filter.get_alh_force(self.latch))
-            except AttributeError:
+            except AttributeError as ex:
                 raise ValueError(
                     "can't create alh force PV from %s" % type(self.filter)
-                )
+                ) from ex
 
         return lineList
 
@@ -424,6 +500,8 @@ class InclusionMarker(BaseNode):
 
         Parameters
         ----------
+        parent : string
+            The tag of the parent node.
         ext : str, optional
             provide an extension to replace the one in the filename with, e.g.
             '.alh'. Keeps the original if None. The default is None.
@@ -431,7 +509,7 @@ class InclusionMarker(BaseNode):
         Returns
         -------
         lineList : list
-            the alarm node as an ElementTree with appropriate children.
+            A list of lines which can be written to a file, representing this node.
         """
         if ext is not None:
             linkTarget = os.path.splitext(self.filename)[0] + ext
