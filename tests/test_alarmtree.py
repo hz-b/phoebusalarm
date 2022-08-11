@@ -17,21 +17,20 @@ class TestAlarmTree(unittest.TestCase):
     Test featuers of the alarm tree class
     """
 
+    def setUp(self):
+        self.tree = AlarmTree(configName="Test")
+        self.node1 = self.tree.create_node("Group1")
+        self.node2 = self.tree.create_node("Group2")
+
     def test_unique(self):
-        tree = AlarmTree(configName="Test")
-        node1 = tree.create_node("Group1")
-        node2 = tree.create_node("Group2")
-        tree.create_node("SubGroup", parent=node1)
-        tree.create_node("SubGroup", parent=node2)
+        self.tree.create_node("SubGroup", parent=self.node1)
+        self.tree.create_node("SubGroup", parent=self.node2)
         with self.assertRaises(DuplicatedNodeIdError):
-            tree.create_node("SubGroup", parent=node2)
+            self.tree.create_node("SubGroup", parent=self.node2)
 
     def test_alh_warning(self):
-        tree = AlarmTree(configName="Test")
-        tree.create_node("Group1")
-        tree.create_node("Group2")
         with self.assertWarns(Warning):
-            tree.get_alh_lines()
+            self.tree.get_alh_lines()
 
     def test_default_root(self):
         tree = AlarmTree()
@@ -43,19 +42,34 @@ class TestAlarmTree(unittest.TestCase):
         self.assertIsNot(type(tree.get_node(tree.root)), type(alarm))
 
     def test_removal(self):
-        tree = AlarmTree(configName="Test")
-        node1 = tree.create_node("Group1")
-        node2 = tree.create_node("Group2")
-        tree.create_node("SubGroup", parent=node1)
-        tree.create_node("SubGroup2", parent=node1)
+        self.tree.create_node("SubGroup", parent=self.node1)
+        self.tree.create_node("SubGroup2", parent=self.node1)
 
-        numberRemoved = tree.remove_node(node1)
-
+        numberRemoved = self.tree.remove_node(self.node1)
         self.assertEqual(numberRemoved, 3)
+        rootChildren = self.tree.children(self.tree.root)
+        self.assertEqual(rootChildren, [self.node2])
 
-        allNodes = tree.children(tree.root)
+    def test_is_leaf(self):
+        alarm1 = self.tree.create_alarm("test:ai1", self.node1)
 
-        self.assertEqual(allNodes, [node2])
+        self.assertTrue(self.tree.is_leaf(alarm1))
+        self.assertFalse(self.tree.is_leaf(self.node1))
+        self.assertTrue(self.tree.is_leaf(self.node2))
+
+    def test_link_past(self):
+        alarm1 = self.tree.create_alarm("test:ai1", self.node1)
+        alarm2 = self.tree.create_alarm("test:ai2", self.node1)
+        alarm3 = self.tree.create_alarm("test:ai3", self.node1)
+        self.tree.create_alarm("test:ai4", self.node2)
+
+        self.tree.link_past_node(self.node1)
+
+        self.assertEqual(
+            self.tree.children(self.tree.root), [self.node2, alarm1, alarm2, alarm3]
+        )
+
+        self.assertEqual(self.tree.parent(alarm1).identifier, self.tree.root)
 
 
 class TestEndToEnd(unittest.TestCase):

@@ -301,10 +301,9 @@ class AlarmTree:
         return self.nodes[nid].node if nid is not None else None
 
     def children(self, parent):
-        "get list of children nodes for the parent"
+        "get list of direct child nodes for the parent"
         pid = id_from_node_or_str(parent)
-        childList = [self.nodes[cid].node for cid in self.nodes[pid].children]
-        return childList
+        return [self.nodes[cid].node for cid in self.nodes[pid].children]
 
     def get_xml_string(self, forceXMLext=False):
         """get the tree as an xml string"""
@@ -330,6 +329,32 @@ class AlarmTree:
         lineList = self.get_alh_lines(ext=ext)
 
         return "\n".join(lineList)
+
+    def is_leaf(self, node):
+        """
+        check if the given node as any children, i.e., true if it is a leaf
+        """
+        nid = id_from_node_or_str(node)
+        return not bool(self.nodes[nid].children)
+
+    def link_past_node(self, node):
+        """
+        remove the node and add its children to the parent
+        """
+
+        nid = id_from_node_or_str(node)
+        pid = self.nodes[nid].parentId
+
+        if pid is None:
+            raise ValueError("Cannot remove root node")
+
+        self.nodes[pid].children.remove(nid)
+        removedEntry = self.nodes.pop(nid)
+        cids = removedEntry.children
+        self.nodes[pid].children.extend(cids)
+        for cid in cids:
+            newEntry = TreeEntry(self.nodes[cid].node, pid, self.nodes[cid].children)
+            self.nodes[cid] = newEntry
 
     def parent(self, node):
         """
