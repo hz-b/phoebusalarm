@@ -343,14 +343,27 @@ class AlarmTree:
 
     def remove_node(self, node):
         """
-        remove this node and its children, return number of removed nodes
+        remove this node and its children, return number of removed nodes.
         """
         nid = id_from_node_or_str(node)
+        pid = self.nodes[nid].parentId
+        self.nodes[pid].children.remove(nid)
 
-        removedNode = self.nodes.pop(nid)
+        numberRemoved = self.recursive_node_remove(nid)
+
+        return numberRemoved
+
+    def recursive_node_remove(self, nid):
+        """
+        INTERNAL
+        recurse the tree from node and remove all its children
+        leaves link from parent
+        """
+
+        removedEntry = self.nodes.pop(nid)
         numberRemoved = 1
-        for child in removedNode.children:
-            removedChildren = self.remove_node(child)
+        for cid in removedEntry.children:
+            removedChildren = self.recursive_node_remove(cid)
             numberRemoved += removedChildren
 
         return numberRemoved

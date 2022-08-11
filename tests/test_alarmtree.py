@@ -42,6 +42,21 @@ class TestAlarmTree(unittest.TestCase):
         self.assertIsNot(tree.get_node(tree.root), alarm)
         self.assertIsNot(type(tree.get_node(tree.root)), type(alarm))
 
+    def test_removal(self):
+        tree = AlarmTree(configName="Test")
+        node1 = tree.create_node("Group1")
+        node2 = tree.create_node("Group2")
+        tree.create_node("SubGroup", parent=node1)
+        tree.create_node("SubGroup2", parent=node1)
+
+        numberRemoved = tree.remove_node(node1)
+
+        self.assertEqual(numberRemoved, 3)
+
+        allNodes = tree.children(tree.root)
+
+        self.assertEqual(allNodes, [node2])
+
 
 class TestEndToEnd(unittest.TestCase):
     """
