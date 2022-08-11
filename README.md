@@ -4,14 +4,14 @@ A Python package to create alarm configurations for Phoebus
 https://controlssoftware.sns.ornl.gov/css_phoebus/
 
 ## Requirements
-Python >= 3.5 and treelib.
+Python >= 3.5
 
 ## Installation
 Use pip to install the package
 ```
 pip install .
 ```
-alternatively you can run the convert_aly.py script directly, so lang as you have treelib installed.
+alternatively you can run the convert_aly.py script directly.
 
 ## Usage
 This package has two intended usages: Converting Alarm Handler configurations to Phoebus and facilitating the creation of Phoebus alarm configs with Python scripts.
