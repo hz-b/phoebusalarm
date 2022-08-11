@@ -44,15 +44,18 @@ def paste_subtree_into_base(baseTree, subTree, inclusionId):
     try:
         baseTree.paste(parent.identifier, rootRemoved)
     except ValueError as ex:
-        logger.critical("Failed to include %s into tree. "
-                        "Original exception: %s",
-                        firstLevelList[0].identifier, ex)
+        logger.critical(
+            "Failed to include %s into tree. " "Original exception: %s",
+            firstLevelList[0].identifier,
+            ex,
+        )
 
     baseTree.remove_node(inclusionId)
 
 
-def recursive_alh_parse(inPath, outPath, singleFile=False, configName=None,
-                        ignoreExisting=False):
+def recursive_alh_parse(
+    inPath, outPath, singleFile=False, configName=None, ignoreExisting=False
+):
     """
     Wrap the parse_alh function and call it on any included files as well
 
@@ -81,21 +84,18 @@ def recursive_alh_parse(inPath, outPath, singleFile=False, configName=None,
     if singleFile and ignoreExisting:
         raise ValueError("must overwrite exsiting files, if creating a single output")
 
-    overwrite = not ignoreExisting
-
-    inputDir, inputName = os.path.split(inPath)
-    outputDir, outputName = os.path.split(outPath)
-
-    if configName is None:
-        configName = os.path.splitext(inputName)[0]
+    inputDir, outputDir, configName = path_and_config_from_files(
+        inPath, outPath, configName
+    )
 
     baseTree = parse_alh(inPath, configName)
 
-    inclusionNodes = [node for node in baseTree.all_nodes()
-                      if isinstance(node, InclusionMarker)]
+    inclusionNodes = [
+        node for node in baseTree.all_nodes() if isinstance(node, InclusionMarker)
+    ]
 
     for inclusion in inclusionNodes:
-        subOutName = os.path.splitext(inclusion.filename)[0]+".xml"
+        subOutName = os.path.splitext(inclusion.filename)[0] + ".xml"
         if os.path.isabs(inclusion.filename):
             subInPath = inclusion.fileName
             subOutPath = subOutName
@@ -103,14 +103,14 @@ def recursive_alh_parse(inPath, outPath, singleFile=False, configName=None,
             subInPath = os.path.join(inputDir, inclusion.filename)
             subOutPath = os.path.join(outputDir, subOutName)
 
-        if overwrite or not os.path.isfile(subOutPath):
+        if not (os.path.isfile(subOutPath) and ignoreExisting):
             subConfigName = baseTree.parent(inclusion.identifier).identifier
-            subTree = recursive_alh_parse(subInPath, subOutPath, singleFile,
-                                          configName=subConfigName)
+            subTree = recursive_alh_parse(
+                subInPath, subOutPath, singleFile, configName=subConfigName
+            )
 
             if singleFile:
                 paste_subtree_into_base(baseTree, subTree, inclusion.identifier)
-
 
     if not singleFile:
         baseTree.write_xml(outPath, forceXMLext=True)
@@ -118,38 +118,72 @@ def recursive_alh_parse(inPath, outPath, singleFile=False, configName=None,
     return baseTree
 
 
-def alh_to_xml():
-    dscString = ("Converts alarm handler config files into phoebus compatible "
-                 "xml files. Optionally recurses through the files "
-                 "included in the top alarm handler config.")
+def path_and_config_from_files(inPath, outPath, configName=None):
+    """
+    split of input and output dir from their path and determine a configName
+    from in input file name if it is not given.
+    """
+    inputDir, inputName = os.path.split(inPath)
+    outputDir = os.path.split(outPath)[0]
 
-    ver = get_versions()['version']
+    if configName is None:
+        configName = os.path.splitext(inputName)[0]
+
+    return inputDir, outputDir, configName
+
+
+def alh_to_xml():
+    """
+    Main function and script entry point
+    """
+
+    dscString = (
+        "Converts alarm handler config files into phoebus compatible "
+        "xml files. Optionally recurses through the files "
+        "included in the top alarm handler config."
+    )
+
+    ver = get_versions()["version"]
 
     parser = argparse.ArgumentParser(description=dscString)
-    parser.add_argument('--version', action='version',
-                        version='%(prog)s v' + ver)
+    parser.add_argument("--version", action="version", version="%(prog)s v" + ver)
     parser.add_argument("input", help="alarm handler file to convert")
-    parser.add_argument("-o", "--output",
-                        help="output xml-file")
-    parser.add_argument("-c", "--config",
-                        help="name of the config in phoebus/kafka")
-    parser.add_argument("-r", "--recursive", action='store_true',
-                        help="convert all files included by the input file")
-    parser.add_argument("-f", "--single-file", action='store_true',
-                        help="output a single file even for recursion")
-    parser.add_argument("-t", "--trim", action='store_true',
-                        help="remove the top-level group to reduce depth of tree")
-    parser.add_argument("-i", "--ignore-existing", action='store_true',
-                        help="do not overwrite existing files when recursing")
-    parser.add_argument("-v", "--verbosity", action='count', default=0,
-                        help="increase log detail")
+    parser.add_argument("-o", "--output", help="output xml-file")
+    parser.add_argument("-c", "--config", help="name of the config in phoebus/kafka")
+    parser.add_argument(
+        "-r",
+        "--recursive",
+        action="store_true",
+        help="convert all files included by the input file",
+    )
+    parser.add_argument(
+        "-f",
+        "--single-file",
+        action="store_true",
+        help="output a single file even for recursion",
+    )
+    parser.add_argument(
+        "-t",
+        "--trim",
+        action="store_true",
+        help="remove the top-level group to reduce depth of tree",
+    )
+    parser.add_argument(
+        "-i",
+        "--ignore-existing",
+        action="store_true",
+        help="do not overwrite existing files when recursing",
+    )
+    parser.add_argument(
+        "-v", "--verbosity", action="count", default=0, help="increase log detail"
+    )
 
     args = parser.parse_args()
 
     try:
-        logLevel = {0: logging.ERROR,
-                    1: logging.WARNING,
-                    2: logging.INFO}[args.verbosity]
+        logLevel = {0: logging.ERROR, 1: logging.WARNING, 2: logging.INFO}[
+            args.verbosity
+        ]
         fmt = "%(levelname)s: %(message)s"
     except KeyError:
         logLevel = logging.DEBUG
@@ -164,7 +198,7 @@ def alh_to_xml():
         outputPath = args.output
     # generate outputpath by replacing extension with xml
     else:
-        outputName = os.path.splitext(inputName)[0]+".xml"
+        outputName = os.path.splitext(inputName)[0] + ".xml"
         outputPath = os.path.join(inputDir, outputName)
 
     # use given config name or detimine from file name

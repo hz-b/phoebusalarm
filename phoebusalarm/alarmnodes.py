@@ -28,23 +28,87 @@ from collections import namedtuple, OrderedDict
 from itertools import chain
 import os
 import urllib.parse
+import uuid
 import xml.etree.ElementTree as ET
-
-from treelib import Node
 
 from . import alh_export
 from .alarmfilter import AlarmFilter
 
 # define for more clarity later
-Guidance = namedtuple("guidance", ['title', 'details'])
-Display = namedtuple("display", ['title', 'details'])
-Command = namedtuple("command", ['title', 'details'])
-Action = namedtuple("automated_action", ['title', 'details', 'delay'])
+Guidance = namedtuple("guidance", ["title", "details"])
+Display = namedtuple("display", ["title", "details"])
+Command = namedtuple("command", ["title", "details"])
+Action = namedtuple("automated_action", ["title", "details", "delay"])
 
-class AlarmNode(Node):
+
+def id_from_node_or_str(node):
+    """
+    pass node object or id string and get the id string
+    """
+
+    try:
+        nid = node.identifier
+    except AttributeError:
+        nid = node
+    return nid
+
+
+class BaseNode:
+    """
+    Common funcitonality of "Groups" and "Inclusions"
+    """
+
+    def __init__(self, identifier=None, tag=None, sortKey=0):
+        """
+        Constructor
+
+        Parameters
+        ----------
+        identifier : string, optional
+            A unique identifier of the Node. If None, a UUID will be created.
+            The default is None.
+        tag : string, optional
+            An alternative tag of the node.
+        sortKey : float, optional
+            A key to sort the nodes/pvs by. The default is insertion order
+        """
+
+        if identifier is None:
+            self._id = str(uuid.uuid1())
+        else:
+            self._id = identifier
+
+        if tag is None:
+            self.tag = self.identifier
+        else:
+            self.tag = tag
+
+        self.sortKey = sortKey
+
+    @property
+    def sortKey(self):
+        """
+        sortkey defines the order of nodes on export.
+        It is always a string, to allow comparison
+        """
+        return self._sortKey
+
+    @sortKey.setter
+    def sortKey(self, newKey):
+        self._sortKey = str(newKey)
+
+    # identifier should not be modified, read-only access to protected _id member
+    @property
+    def identifier(self):
+        """unique ID of the node"""
+        return self._id
+
+
+class AlarmNode(BaseNode):
     """
     Representation of an alarm tree node
     """
+
     def __init__(self, name, identifier=None, tag=None, sortKey=0):
         """
         Constructor
@@ -52,12 +116,13 @@ class AlarmNode(Node):
         Parameters
         ----------
         name : string
-            The name of the node as used in phoebus.
+            The name of the node as used in phoebus. Will be the ALIAS in alh.
         identifier : string, optional
             A unique identifier of the Node. If None, a UUID will be created.
             The default is None.
         tag : string, optional
             An alternative tag of the node. Not exported to xml.
+            Used as the unique name in alh export.
             The default is None, which sets tag=name.
         sortKey : float, optional
             A key to sort the nodes/pvs by. The default is insertion order
@@ -65,22 +130,19 @@ class AlarmNode(Node):
         if tag is None:
             tag = name
 
-        super().__init__(tag=tag, identifier=identifier)
+        super().__init__(identifier=identifier, tag=tag, sortKey=sortKey)
+
         self.guidances = []
         self.commands = []
         self.displays = []
         self.actions = []
-        self.sortKey = sortKey
         self._xmlType = "component"
         self._name = name
 
     @property
-    def sortKey(self):
-        return self._sortKey
-
-    @sortKey.setter
-    def sortKey(self, newKey):
-        self._sortKey = str(newKey)
+    def name(self):
+        """name of the node in phoebus (Group ALIAS in alh)"""
+        return self._name
 
     def add_guidance(self, title, details):
         """
@@ -132,8 +194,9 @@ class AlarmNode(Node):
             parseResult = urllib.parse.urlparse(path, scheme="file")
 
             if not parseResult.path.startswith("/"):
-                raise ValueError("absolute path required to use macros "
-                                 + parseResult.path)
+                raise ValueError(
+                    "absolute path required to use macros " + parseResult.path
+                )
 
             if not parseResult.query:
                 macros = OrderedDict(sorted(macros.items()))
@@ -179,8 +242,7 @@ class AlarmNode(Node):
         if not isinstance(recipients, str):
             recipients = ",".join(recipients)
 
-        self.actions.append(Action(title, "mailto:{0}".format(recipients),
-                                   delay))
+        self.actions.append(Action(title, "mailto:{0}".format(recipients), delay))
 
     def add_sevr_pv(self, pv, title="Severity PV"):
         """
@@ -195,7 +257,7 @@ class AlarmNode(Node):
         """
         self.actions.append(Action(title, "sevrpv:{0}".format(pv), 0))
 
-    def get_xml_element(self, **kwargs):
+    def get_xml_element(self, **kwargs):  # pylint: disable=unused-argument
         """
         convert the node to an element tree description to dump as xml
 
@@ -215,7 +277,20 @@ class AlarmNode(Node):
 
         return xmlElement
 
-    def get_alh_lines(self, parent, **kwargs):
+    def get_alh_lines(self, parent, **kwargs):  # pylint: disable=unused-argument
+        """
+        return a list of alh lines representing the node
+
+        Parameters
+        ----------
+        parent : string
+            The tag of the parent node.
+
+        Returns
+        -------
+        lineList : List of Strings
+            A list of lines which can be written to a file, representing this node.
+        """
         lineList = ["GROUP {0} {1}".format(parent, self.tag)]
 
         if self._name != self.tag:
@@ -240,9 +315,12 @@ class AlarmNode(Node):
 
 
 class AlarmPV(AlarmNode):
+    # I am okay with 8 instead of pylints max 7
+    # pylint: disable=too-many-instance-attributes
     """
     Representation of an alarm PV
     """
+
     def __init__(self, channelPV, **kwargs):
         super().__init__(name=channelPV, identifier=channelPV, **kwargs)
         self.desc = ""
@@ -255,12 +333,32 @@ class AlarmPV(AlarmNode):
         self._xmlType = "pv"
 
     def add_filter(self, expr, value=1, replaceDict=None):
+        """
+        Add a filter condition to the PV, in the style of alh FORCE_PV.
+        This creates an AlarmFilter object and adds it as the filter.
+
+        Parameters
+        ----------
+        expr : str
+            a PV or an EPICS CALC like expression, such as A>B or A+B=C.
+            It must not contain constants for alh compatibility. The
+            expression is compared to the value, with the default 1, i.e., true.
+            If neither no replaceDict is given, expr is assumed to simply be a PV.
+        value : numeric or True, optional
+            give the value of expression to activate the filter at.
+            The default is 1. Use True if the expression is directly True/False,
+            i.e. 0 or 1. This will create a simpler Phoebus filter than using
+            1.
+        replaceDict : dict, optional
+            A dictionary containing the possible key A-F. The value for each
+            key is used to replace the corresponding variable in the expr.
+            The default is None.
+        """
         if replaceDict is None:
             replaceDict = {}
         self.filter = AlarmFilter(expr, value, **replaceDict)
 
-
-    def get_xml_element(self, **kwargs):
+    def get_xml_element(self, **kwargs):  # pylint: disable=unused-argument
         """
         convert the node to an element tree description to dump as xml
 
@@ -291,16 +389,36 @@ class AlarmPV(AlarmNode):
             except AttributeError:
                 toAdd["filter"] = self.filter
 
-        for name, value in toAdd.items():
-            prop = ET.SubElement(xmlElement, name)
+        for i, (name, value) in enumerate(toAdd.items()):
+            subelement = ET.Element(name)
             if isinstance(value, bool):
-                prop.text = str(value).lower()
+                subelement.text = str(value).lower()
             else:
-                prop.text = str(value)
+                subelement.text = str(value)
+
+            xmlElement.insert(i, subelement)
 
         return xmlElement
 
     def get_alh_lines(self, parent, **kwargs):
+        """
+        return a list of alh lines representing the node
+
+        Parameters
+        ----------
+        parent : string
+            The tag of the parent node.
+
+        Raises
+        ------
+        ValueError
+            If the filter of the node can not be represented as a FORCE_PV in alh.
+
+        Returns
+        -------
+        lineList : List of Strings
+            A list of lines which can be written to a file, representing this node.
+        """
         lineList = super().get_alh_lines(parent)
 
         try:
@@ -313,49 +431,41 @@ class AlarmPV(AlarmNode):
         else:
             defaultEnabled = False
 
-
         mask = alh_export.make_mask(defaultEnabled, self.latch)
 
-        lineList[0] = "CHANNEL {par} {pv} {mask}".format(par=parent,
-                                                         pv=self._name,
-                                                         mask=mask)
+        lineList[0] = "CHANNEL {par} {pv} {mask}".format(
+            par=parent, pv=self._name, mask=mask
+        )
 
         if self.desc:
             lineList.insert(1, "$ALIAS {0}".format(self.desc))
 
-
         if self.delay > 0:
-            line = "$ALARMCOUNTFILTER {cnt} {dly}".format(cnt=self.count,
-                                                          dly=self.delay)
+            line = "$ALARMCOUNTFILTER {cnt} {dly}".format(
+                cnt=self.count, dly=self.delay
+            )
             lineList.append(line)
 
         if self.filter:
             try:
                 lineList.extend(self.filter.get_alh_force(self.latch))
-            except AttributeError:
-                raise ValueError("can't create alh force PV from %s"%type(self.filter))
+            except AttributeError as ex:
+                raise ValueError(
+                    "can't create alh force PV from %s" % type(self.filter)
+                ) from ex
 
         return lineList
 
 
-class InclusionMarker(Node):
+class InclusionMarker(BaseNode):
     """
     Marker for indicating file inclusions
     """
 
     def __init__(self, filename, sortKey=0):
-        super().__init__()
+        super().__init__(sortKey=sortKey)
         self.filename = filename
-        self.sortKey = sortKey
         self._xmlType = "xi:include"
-
-    @property
-    def sortKey(self):
-        return self._sortKey
-
-    @sortKey.setter
-    def sortKey(self, newKey):
-        self._sortKey = str(newKey)
 
     def get_xml_element(self, ext=None):
         """
@@ -376,9 +486,11 @@ class InclusionMarker(Node):
             linkTarget = os.path.splitext(self.filename)[0] + ext
         else:
             linkTarget = self.filename
-        xmlAttributes = {"href": linkTarget,
-                         "xpointer": "element(/1/1)",
-                         "xmlns:xi": "http://www.w3.org/2001/XInclude"}
+        xmlAttributes = {
+            "href": linkTarget,
+            "xpointer": "element(/1/1)",
+            "xmlns:xi": "http://www.w3.org/2001/XInclude",
+        }
         xmlElement = ET.Element(self._xmlType, attrib=xmlAttributes)
         return xmlElement
 
@@ -388,6 +500,8 @@ class InclusionMarker(Node):
 
         Parameters
         ----------
+        parent : string
+            The tag of the parent node.
         ext : str, optional
             provide an extension to replace the one in the filename with, e.g.
             '.alh'. Keeps the original if None. The default is None.
@@ -395,7 +509,7 @@ class InclusionMarker(Node):
         Returns
         -------
         lineList : list
-            the alarm node as an ElementTree with appropriate children.
+            A list of lines which can be written to a file, representing this node.
         """
         if ext is not None:
             linkTarget = os.path.splitext(self.filename)[0] + ext

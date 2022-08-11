@@ -23,10 +23,33 @@ import os
 import urllib.parse
 import warnings
 
-#module wide settings
-EDM_COMMAND = "run_edm.sh" # use this command to open .edl files
+# module wide settings
+EDM_COMMAND = "run_edm.sh"  # use this command to open .edl files
+
 
 def format_action(action, delay):
+    """
+    Take the automated action from the alarmtree (in the format for phoebus)
+    and return it in a format for alh.
+
+    Parameters
+    ----------
+    action : str
+        The action string from phoebus
+    delay : numerical
+        delay of the action (alh can't do anything but 0')
+
+    Raises
+    ------
+    ValueError
+        For unknown action types.
+
+    Returns
+    -------
+    line : str
+        The line for alh.
+
+    """
     actionType, details = action.split(":", maxsplit=1)
 
     if actionType == "sevrpv":
@@ -45,7 +68,24 @@ def format_action(action, delay):
 
     return line
 
+
 def format_display(display):
+    """
+    Take a phoebus ressource string, like it is passed to phoebus or used in
+    the display attribute of an alarm node. Split of macros and either
+    create an edm command or a GUIDANCE (if it is a URL).
+
+    Parameters
+    ----------
+    display : str
+        The phoebus ressource string to convert.
+
+    Returns
+    -------
+    line : str
+        An alh line to represent the same content.
+
+    """
     if ".bob" in display:
         parseResult = urllib.parse.urlparse(display)
 
@@ -56,7 +96,7 @@ def format_display(display):
         if parseResult.query:
             macroDict = urllib.parse.parse_qs(parseResult.query)
             pairList = [key + "=" + macroDict[key][0] for key in sorted(macroDict)]
-            macroStr = '-m "'+','.join(pairList)+'"'
+            macroStr = '-m "' + ",".join(pairList) + '"'
 
         cmd = " ".join(filter(None, [EDM_COMMAND, macroStr, edlName]))
         line = "$COMMAND {cmd}".format(cmd=cmd)
@@ -64,7 +104,24 @@ def format_display(display):
         line = "$GUIDANCE {url}".format(url=display)
     return line
 
+
 def make_mask(enabled, latch):
+    """
+    Create an alh mask from enabled and latch flags
+
+    Parameters
+    ----------
+    enabled : boolean
+        Is the alarm enabled.
+    latch : boolean
+        Should the alarm latch.
+
+    Returns
+    -------
+    mask : str
+        The mask as used in alh.
+
+    """
 
     mask = ["-", "-", "-", "-", "-"]
 

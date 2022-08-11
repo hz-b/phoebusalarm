@@ -8,13 +8,10 @@ add more tests
 import copy
 import os
 import unittest
-from treelib.exceptions import DuplicatedNodeIdError
 
-import context
 import phoebusalarm.alhparser as alh
-from phoebusalarm.alarmtree import AlarmTree
+from phoebusalarm.alarmtree import AlarmTree, DuplicatedNodeIdError
 from phoebusalarm.alarmnodes import AlarmPV
-from phoebusalarm.alarmfilter import AlarmFilter
 
 
 class TestGuidance(unittest.TestCase):
@@ -24,30 +21,26 @@ class TestGuidance(unittest.TestCase):
 
     def test_with_params(self):
         line = "some link"
-        testNode, contData = alh.process_guidance(line, self.tree, self.node,
-                                                  data=None)
+        testNode, contData = alh.process_guidance(line, self.tree, self.node, data=None)
         self.assertIsNone(contData)
         self.assertEqual(testNode.displays[0].details, line)
 
     def test_empty_params(self):
         line = " "
-        testNode, contData = alh.process_guidance(line, self.tree, self.node,
-                                                  data=None)
+        testNode, contData = alh.process_guidance(line, self.tree, self.node, data=None)
         self.assertIsNotNone(contData)
 
     def test_continuation(self):
         data = "bla\n"
         line = "blubb\n"
-        testNode, contData = alh.process_guidance(line, self.tree, self.node,
-                                                  data=data)
+        testNode, contData = alh.process_guidance(line, self.tree, self.node, data=data)
 
-        self.assertEqual(contData, data+line)
+        self.assertEqual(contData, data + line)
 
     def test_continuation_end(self):
         data = "blua\nblubb"
         line = "$END  \n"
-        testNode, contData = alh.process_guidance(line, self.tree, self.node,
-                                                  data=data)
+        testNode, contData = alh.process_guidance(line, self.tree, self.node, data=data)
         self.assertIsNone(contData)
         self.assertEqual(testNode.guidances[0].details, data)
 
@@ -78,8 +71,9 @@ class TestAlias(unittest.TestCase):
 
     def test_duplicate_names(self):
         otherNode = self.tree.create_node("Group2")
-        self.assertRaises(DuplicatedNodeIdError, alh.process_alias,
-                          "Group1", self.tree, otherNode)
+        self.assertRaises(
+            DuplicatedNodeIdError, alh.process_alias, "Group1", self.tree, otherNode
+        )
 
     def test_alarm(self):
         alarm = self.tree.create_alarm("test:ai1", parent=self.node)
@@ -139,18 +133,20 @@ class TestFilterPropagation(unittest.TestCase):
 
 class TestGroupFilter(unittest.TestCase):
     inPath = "temp.alh"
-    alhConfig = ("GROUP NULL Group\n"
-                 "$ALIAS Group Name\n"
-                 "$FORCEPV CALC   -D-T-   1       NE\n"
-                 "$FORCEPV_CALC A<B\n"
-                 "$FORCEPV_CALC_A test:ai3\n"
-                 "$FORCEPV_CALC_B 4\n"
-                 "\n"
-                 "CHANNEL Group test:ai1	---T-\n"
-                 "$ALIAS OFF\n"
-                 "\n"
-                 "CHANNEL Group tets:ai2	---T-\n"
-                 "$ALIAS Sum Error\n")
+    alhConfig = (
+        "GROUP NULL Group\n"
+        "$ALIAS Group Name\n"
+        "$FORCEPV CALC   -D-T-   1       NE\n"
+        "$FORCEPV_CALC A<B\n"
+        "$FORCEPV_CALC_A test:ai3\n"
+        "$FORCEPV_CALC_B 4\n"
+        "\n"
+        "CHANNEL Group test:ai1	---T-\n"
+        "$ALIAS OFF\n"
+        "\n"
+        "CHANNEL Group tets:ai2	---T-\n"
+        "$ALIAS Sum Error\n"
+    )
 
     def setUp(self):
         with open(self.inPath, "w") as alhFile:
@@ -165,8 +161,10 @@ class TestGroupFilter(unittest.TestCase):
     def tearDown(self):
         os.remove(self.inPath)
 
+
 class TestForcePV(unittest.TestCase):
     """Test simple forcePV"""
+
     def setUp(self):
         self.tree = AlarmTree("test")
         self.node = self.tree.create_alarm("test:ai1")
@@ -190,20 +188,21 @@ class TestForcePVCalc(unittest.TestCase):
         alh.process_forcepvcalc(alhFragment, self.tree, self.node)
         self.assertEqual(self.node.filter.expr, "A+B<3")
 
-
     def test_letters(self):
         argList = ["CALC_A test:ai1", "CALC_B test:ai2", "CALC_C test:ai3"]
         for arg in argList:
             alh.process_forcepvcalc(arg, self.tree, self.node)
 
-        expectation = {"A":"test:ai1",
-                       "B":"test:ai2",
-                       "C":"test:ai3",
-                       "D":"",
-                       "E":"",
-                       "F":""}
+        expectation = {
+            "A": "test:ai1",
+            "B": "test:ai2",
+            "C": "test:ai3",
+            "D": "",
+            "E": "",
+            "F": "",
+        }
         self.assertDictEqual(self.node.filter.replacements, expectation)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
