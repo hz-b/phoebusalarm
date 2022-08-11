@@ -27,13 +27,21 @@ class TestInclusionMarker(unittest.TestCase):
 
     filePath = "test.xml"
 
-    def test_marker(self):
-        marker = InclusionMarker(self.filePath)
-        xml = marker.get_xml_element()
+    def setUp(self):
+        self.marker = InclusionMarker(self.filePath)
+
+    def test_xml_marker(self):
+
+        xml = self.marker.get_xml_element()
 
         self.assertEqual(xml.tag, "xi:include")
         self.assertEqual(xml.attrib["href"], self.filePath)
         self.assertEqual(xml.attrib["xpointer"], "element(/1/1)")
+
+    def test_alh_marker(self):
+        alh = self.marker.get_alh_lines("MyGroup")
+
+        self.assertEqual(alh[0], "INCLUDE MyGroup " + self.filePath)
 
 
 class TestAlarmNode(unittest.TestCase):
