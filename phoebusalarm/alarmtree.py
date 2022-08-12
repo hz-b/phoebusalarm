@@ -344,14 +344,20 @@ class AlarmTree:
 
         nid = id_from_node_or_str(node)
         pid = self.nodes[nid].parentId
+        cids = self.nodes[nid].children
 
         if pid is None:
-            raise ValueError("Cannot remove root node")
+            if len(cids) > 1:
+                raise ValueError(
+                    "Cannot remove root node, if second level has multiple nodes"
+                )
+            else:
+                self.root = cids[0]
+        else:
+            self.nodes[pid].children.remove(nid)
+            self.nodes[pid].children.extend(cids)
 
-        self.nodes[pid].children.remove(nid)
-        removedEntry = self.nodes.pop(nid)
-        cids = removedEntry.children
-        self.nodes[pid].children.extend(cids)
+        self.nodes.pop(nid)
         for cid in cids:
             newEntry = TreeEntry(self.nodes[cid].node, pid, self.nodes[cid].children)
             self.nodes[cid] = newEntry
