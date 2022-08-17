@@ -215,10 +215,11 @@ def alh_to_xml():
 
     # remove the top element (config)
     if args.trim:
-        try:
-            tree.link_past_node(tree.root)
-        except ValueError:
+        topLevel = tree.children(tree.root)
+        if len(topLevel) > 1:
             logging.error("Multiple top level groups, can't remove")
+        else:
+            tree.link_past_node(topLevel[0].identifier)
 
     config = tree.get_node(tree.root)
     config.tag = configName

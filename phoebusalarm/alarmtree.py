@@ -56,7 +56,7 @@ from .alarmnodes import (
 TreeEntry = namedtuple("TreeEntry", ["node", "parentId", "children"])
 
 
-class DuplicatedNodeIdError(Exception):
+class DuplicatedNodeIdError(ValueError):
     """Exception thrown if an id already exists in the tree."""
 
     def __init__(self, node, message=""):
@@ -64,6 +64,10 @@ class DuplicatedNodeIdError(Exception):
             self, " ".join(("Duplicate ID '%s' " % node.identifier, message))
         )
         self.nodeId = node.identifier
+
+
+class RootNodeRemovalError(ValueError):
+    """Exception thrown if attempting to remove the root node"""
 
 
 class AlarmTree:
@@ -347,17 +351,12 @@ class AlarmTree:
         cids = self.nodes[nid].children
 
         if pid is None:
-            if len(cids) > 1:
-                raise ValueError(
-                    "Cannot remove root node, if second level has multiple nodes"
-                )
-            else:
-                self.root = cids[0]
-        else:
-            self.nodes[pid].children.remove(nid)
-            self.nodes[pid].children.extend(cids)
+            raise RootNodeRemovalError("Can't link past the root node")
 
+        self.nodes[pid].children.remove(nid)
+        self.nodes[pid].children.extend(cids)
         self.nodes.pop(nid)
+
         for cid in cids:
             newEntry = TreeEntry(self.nodes[cid].node, pid, self.nodes[cid].children)
             self.nodes[cid] = newEntry
@@ -377,6 +376,8 @@ class AlarmTree:
         remove this node and its children, return number of removed nodes.
         """
         nid = id_from_node_or_str(node)
+        if nid == self.root:
+            raise RootNodeRemovalError("You can't remove the root node")
         pid = self.nodes[nid].parentId
         self.nodes[pid].children.remove(nid)
 

@@ -9,7 +9,11 @@ import os
 import unittest
 import xml.etree.ElementTree as ET
 
-from phoebusalarm.alarmtree import AlarmTree, DuplicatedNodeIdError
+from phoebusalarm.alarmtree import (
+    AlarmTree,
+    DuplicatedNodeIdError,
+    RootNodeRemovalError,
+)
 
 
 class TestAlarmTree(unittest.TestCase):
@@ -72,19 +76,8 @@ class TestAlarmTree(unittest.TestCase):
         self.assertEqual(self.tree.parent(alarm1).identifier, self.tree.root)
 
     def test_link_past_root(self):
-        alarm1 = self.tree.create_alarm("test:ai1", self.node1)
-        alarm2 = self.tree.create_alarm("test:ai2", self.node1)
-        alarm3 = self.tree.create_alarm("test:ai3", self.node1)
-        self.tree.create_alarm("test:ai4", self.node2)
-        with self.assertRaises(ValueError):
+        with self.assertRaises(RootNodeRemovalError):
             self.tree.link_past_node(self.tree.root)
-
-        self.tree.remove_node(self.node2)
-
-        self.tree.link_past_node(self.tree.root)
-        self.assertEqual(self.tree.root, self.node1.identifier)
-
-        self.assertEqual(self.tree.children(self.tree.root), [alarm1, alarm2, alarm3])
 
 
 class TestEndToEnd(unittest.TestCase):
