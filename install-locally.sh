@@ -1,10 +1,10 @@
-#!/bin/bash
+#!/bin/sh
 
 SCRIPT_FULL_NAME=$(readlink -e $0)
-MYDIR=$(dirname $SCRIPT_FULL_NAME)
-MYNAME=$(basename $SCRIPT_FULL_NAME)
+MYDIR=$(dirname -- "$SCRIPT_FULL_NAME")
+MYNAME=$(basename -- "$SCRIPT_FULL_NAME")
 
-if [ "$1" == "-h" -o "$1" == "--help" ]; then
+if [ "$1" = "-h" -o "$1" = "--help" ]; then
     echo "$MYNAME"
     echo "Installs this project locally in directories 'bin' and 'lib'."
     echo
@@ -28,11 +28,11 @@ fi
 
 MAJOR_VER=$(echo $VER | sed -e 's/\..*//')
 
-if (( $MAJOR_VER <= 9 )); then
+if [ "$MAJOR_VER" -le 9 ]; then
     # very old python3 version, cannot use pip
     python3 setup.py install --prefix=. --single-version-externally-managed --root .
 else
     # modern pip, we can use pip:
-    pip install --prefix . --no-warn-script-location --no-cache-dir .
+    pip3 install --prefix . --no-warn-script-location --no-cache-dir .
 fi
 
