@@ -11,7 +11,7 @@ Use pip to install the package
 ```
 pip install .
 ```
-alternatively you can run the convert_aly.py script directly.
+alternatively you can run the convert_alh.py script directly.
 
 ## Usage
 This package has two intended usages: Converting Alarm Handler configurations to Phoebus and facilitating the creation of Phoebus alarm configs with Python scripts.
