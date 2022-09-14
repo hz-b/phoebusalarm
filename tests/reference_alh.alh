@@ -1,6 +1,6 @@
-GROUP NULL Group1
+GROUP NULL Gröup1
 $GUIDANCE
-A very important Alarm group
+A very important Älarm group
 $END
 $GUIDANCE
 Global contact for Group1
@@ -8,7 +8,7 @@ $END
 $GUIDANCE https://en.wikipedia.org/wiki/Guidance
 $COMMAND run_edm.sh alarm_ctr.edl
 
-GROUP Group1 Group1_1
+GROUP Gröup1 Group1_1
 $COMMAND /home/iocuser/test.sh
 
 CHANNEL Group1_1 test:ai1 -----
@@ -21,7 +21,7 @@ $FORCEPV CALC ----- 1 NE
 $FORCEPV_CALC A<3
 $FORCEPV_CALC_A test:ai1
 
-GROUP Group1 Group1_2
+GROUP Gröup1 Group1_2
 $SEVRPV test:sevr
 
 CHANNEL Group1_2 test:ai3 ---T-

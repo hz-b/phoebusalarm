@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <config name="Test">
-  <component name="Group1">
+  <component name="Gröup1">
     <guidance>
       <title>Description</title>
-      <details>A very important Alarm group</details>
+      <details>A very important Älarm group</details>
     </guidance>
     <guidance>
       <title>Contacts</title>

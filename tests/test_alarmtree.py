@@ -92,8 +92,8 @@ class TestEndToEnd(unittest.TestCase):
     def setUp(self):
         self.alarmTree = AlarmTree(configName="Test")
         # add an configure a top group
-        group1 = self.alarmTree.create_node("Group1")
-        group1.add_guidance("Description", "A very important Alarm group")
+        group1 = self.alarmTree.create_node("Gröup1")
+        group1.add_guidance("Description", "A very important Älarm group")
         group1.add_guidance("Contacts", "Global contact for Group1")
         group1.add_display("Web", "https://en.wikipedia.org/wiki/Guidance")
         group1.add_display("Control", "/opt/epics/alarm_test/alarm_ctr.bob")
@@ -139,6 +139,15 @@ class TestEndToEnd(unittest.TestCase):
         self.maxDiff = None
         self.assertEqual(actualXML, referenceXML)
 
+    def test_latin1_write(self):
+        xmlString = self.alarmTree.get_xml_string(encoding="ISO-8859-1")
+        with open(self.outFile, "w", encoding="ISO-8859-1") as f:
+            f.write(xmlString)
+
+        actualTree = ET.parse(self.outFile)
+        firstGroup = actualTree.find("component")
+        self.assertEqual(firstGroup.get("name"), "Gröup1")
+
     def test_alh_write(self):
         with self.assertWarns(Warning):
             self.alarmTree.write_alh(outputPath=self.outFile)
@@ -146,7 +155,7 @@ class TestEndToEnd(unittest.TestCase):
         with open(self.outFile) as f:
             actualLines = f.readlines()
 
-        with open(self.referenceALH) as f:
+        with open(self.referenceALH, encoding="latin1") as f:
             refLines = f.readlines()
 
         cleanedRef = [line for line in refLines if line != "\n"]

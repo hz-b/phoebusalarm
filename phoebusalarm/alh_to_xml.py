@@ -151,6 +151,9 @@ def alh_to_xml():
     parser.add_argument("-o", "--output", help="output xml-file")
     parser.add_argument("-c", "--config", help="name of the config in phoebus/kafka")
     parser.add_argument(
+        "-e", "--encoding", help="encoding of the output file", default="UTF-8"
+    )
+    parser.add_argument(
         "-r",
         "--recursive",
         action="store_true",
@@ -224,7 +227,7 @@ def alh_to_xml():
     config = tree.get_node(tree.root)
     config.tag = configName
 
-    tree.write_xml(outputPath, forceXMLext=True)
+    tree.write_xml(outputPath, forceXMLext=True, encoding=args.encoding)
     logging.info("Output written to: %s", outputPath)
 
 

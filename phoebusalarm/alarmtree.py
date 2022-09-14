@@ -309,8 +309,25 @@ class AlarmTree:
         pid = id_from_node_or_str(parent)
         return [self.nodes[cid].node for cid in self.nodes[pid].children]
 
-    def get_xml_string(self, forceXMLext=False):
-        """get the tree as an xml string"""
+    def get_xml_string(self, forceXMLext=False, encoding="UTF-8"):
+        """
+        get the tree as an xml string
+
+        Parameters
+        ----------
+        forceXMLext : bool, optional
+            If true the extiosions for all included files are replaced with
+            .xml. The default is False, leaving all file extionsions as is.
+        encoding : string, optional
+            The encoding to use. This is relevant for the xml-encoding tag.
+            The returned string is always unicode encoded. The default is UTF-8.
+
+        Returns
+        -------
+        prettyString : String
+            The alarm tree as an xml string, with nice indentation.
+        """
+
         if forceXMLext:
             ext = ".xml"
         else:
@@ -318,9 +335,16 @@ class AlarmTree:
 
         # get elements and make a pretty xml
         rootElement = self.get_element_tree(ext=ext)
-        roughString = ET.tostring(rootElement, "utf-8")
+        roughString = ET.tostring(rootElement)
+
         reparsed = minidom.parseString(roughString)
-        prettyString = reparsed.toprettyxml(indent="  ")
+        prettyString = reparsed.toprettyxml(indent="  ", encoding=encoding)
+
+        try:
+            prettyString = prettyString.decode(encoding)
+        except AttributeError:
+            pass
+
         return prettyString
 
     def get_alh_string(self, forceALHext=True):
@@ -400,7 +424,7 @@ class AlarmTree:
 
         return numberRemoved
 
-    def write_xml(self, outputPath, forceXMLext=False):
+    def write_xml(self, outputPath, forceXMLext=False, encoding="UTF-8"):
         """
         write the alarm tree to an xml file readable by phoebus
 
@@ -410,10 +434,15 @@ class AlarmTree:
             file to write to.
         forceXMLext : Bool, optional
             Force inlcude file extensions to '.xml'. The default is False.
+        encoding : string, optional
+            The encoding to use. Affects the actual file encoding and sets the
+            proper XML tag.
         """
 
-        with open(outputPath, "w") as outFile:
-            outFile.write(self.get_xml_string(forceXMLext))
+        with open(outputPath, "w", encoding=encoding) as outFile:
+            outFile.write(
+                self.get_xml_string(forceXMLext=forceXMLext, encoding=encoding)
+            )
 
     def write_alh(self, outputPath, forceALHext=True):
         """
