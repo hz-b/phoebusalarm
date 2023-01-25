@@ -12,12 +12,21 @@ from phoebusalarm.alarmnodes import AlarmNode, AlarmPV, InclusionMarker
 
 class TestOrdering(unittest.TestCase):
     def test_string_int(self):
-        alarm0 = AlarmPV("test:pv1", sortKey="A")
-        alarm1 = AlarmPV("test:pv1", sortKey=1)
-        alarm2 = AlarmPV("test:pv2", sortKey="a")
-        alarm3 = AlarmPV("test:pv3", sortKey=1.0e-1)
-        sortedList = sorted([alarm0, alarm1, alarm2, alarm3], key=attrgetter("sortKey"))
-        self.assertListEqual(sortedList, [alarm3, alarm1, alarm0, alarm2])
+        alarm0 = AlarmPV("test:pv1", sortKey=1.0e-1)
+        alarm1 = AlarmPV("test:pv2", sortKey=1)
+        alarm2 = AlarmPV("test:pv3", sortKey="2")
+        alarm3 = AlarmPV("test:pv4", sortKey="3")
+        alarm4 = AlarmPV("test:pv5", sortKey=4)
+        alarm20 = AlarmPV("test:pv6", sortKey="20")
+        alarm31 = AlarmPV("test:pv7", sortKey=31)
+
+        sortedList = sorted(
+            [alarm31, alarm20, alarm4, alarm3, alarm2, alarm1, alarm0],
+            key=attrgetter("sortKey"),
+        )
+        self.assertListEqual(
+            sortedList, [alarm0, alarm1, alarm2, alarm3, alarm4, alarm20, alarm31]
+        )
 
 
 class TestInclusionMarker(unittest.TestCase):

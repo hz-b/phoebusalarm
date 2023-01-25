@@ -89,13 +89,15 @@ class BaseNode:
     def sortKey(self):
         """
         sortkey defines the order of nodes on export.
-        It is always a string, to allow comparison
         """
         return self._sortKey
 
     @sortKey.setter
     def sortKey(self, newKey):
-        self._sortKey = str(newKey)
+        """
+        sort key should be a float
+        """
+        self._sortKey = float(newKey)
 
     # identifier should not be modified, read-only access to protected _id member
     @property
