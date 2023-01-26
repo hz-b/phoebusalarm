@@ -97,7 +97,10 @@ class BaseNode:
         """
         sort key should be a float
         """
-        self._sortKey = float(newKey)
+        if newKey:
+            self._sortKey = float(newKey)
+        else:
+            self._sortKey = 0
 
     # identifier should not be modified, read-only access to protected _id member
     @property
