@@ -32,6 +32,11 @@ if [ "$MAJOR_VER" -le 9 ]; then
     # very old python3 version, cannot use pip
     python3 setup.py install --prefix=. --single-version-externally-managed --root .
 else
+    # Debian 12: Debian modified pip3 adds "local" dir to prefix
+    if [ ! -e "local" ]; then
+        ln -s . local
+    fi
+    
     # modern pip, we can use pip:
     pip3 install --prefix . --no-warn-script-location --no-cache-dir .
 fi
