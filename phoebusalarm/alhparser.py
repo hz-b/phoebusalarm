@@ -444,6 +444,7 @@ def process_statcommand(alhArgs, tree, currentNode, **kwargs):
         status,
     )
     currentNode.add_auto_action(commandName, 0, command)
+    return currentNode, None
 
 
 # see process_example
@@ -455,6 +456,7 @@ def process_beep(alhArgs, tree, currentNode, keyword, **kwargs):
         keyword,
         currentNode.identifier,
     )
+    return currentNode, None
 
 
 # see process_example
