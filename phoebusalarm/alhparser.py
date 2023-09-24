@@ -230,7 +230,7 @@ def process_example(alhArgs, tree, currentNode, data=None, **kwargs):
         The current node. Could be different from the input if a node was added.
     data : None or anything
         Typically None is returned here. This allows a process function to
-        request further lines. If it is anthing other than None subsequent lines
+        request further lines. If it is anything other than None subsequent lines
         will be passed ot that same processing function without further
         pre-processing. This is used in handling multiline guidances.
     """

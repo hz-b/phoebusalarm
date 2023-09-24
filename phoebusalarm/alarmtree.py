@@ -29,9 +29,9 @@ Example Usage:
 >>> pv1 = tree.create_alarm("SubSys1:ai1", node)
 >>> pv1.desc = "An analog input"
 >>> pv2 = tree.create_alarm("test:bi1", node)
->>> pv2.desc = "An import state"
+>>> pv2.desc = "An important state"
 >>> pv2.latch = False
->>> node.add_guidance("Help", "Take some recommned action")
+>>> node.add_guidance("Help", "Take some recommended action")
 >>> node.add_guidance("Contact", "Call 123456 for help")
 >>> node.add_command("fix it", "/opt/bin/fix_everything.sh")
 >>> node.add_display("Panel", "SubSys1.bob")
@@ -182,7 +182,7 @@ class AlarmTree:
 
         Returns
         -------
-        alarmPV : AlarmPV instansce
+        alarmPV : AlarmPV instance
             The instance of the created AlarmPV.
 
         """
@@ -229,7 +229,7 @@ class AlarmTree:
             Identifier of the element to use as root. Use None to start at
             the tree root. The default is None.
         ext : string, optional
-            Extension to use for inlcuded files. None keeps the original
+            Extension to use for included files. None keeps the original
             filenames. The default is None.
 
         Returns
@@ -265,7 +265,7 @@ class AlarmTree:
             the tree root. The default is None. The root node it self will not
             be exported.
         ext : string, optional
-            Extension to use for inlcuded files. None keeps the original
+            Extension to use for included files. None keeps the original
             filenames. The default is None.
 
         Returns
@@ -316,8 +316,8 @@ class AlarmTree:
         Parameters
         ----------
         forceXMLext : bool, optional
-            If true the extiosions for all included files are replaced with
-            .xml. The default is False, leaving all file extionsions as is.
+            If true the extensions for all included files are replaced with
+            .xml. The default is False, leaving all file extensions as is.
         encoding : string, optional
             The encoding to use. This is relevant for the xml-encoding tag.
             The returned string is always unicode encoded. The default is UTF-8.
@@ -453,7 +453,7 @@ class AlarmTree:
         outputPath : file path
             file to write to.
         forceALHext : Bool, optional
-            Force inlcude file extensions to '.alh'. The default is True.
+            Force include file extensions to '.alh'. The default is True.
         """
         with open(outputPath, "w") as outFile:
             outFile.write(self.get_alh_string(forceALHext))
