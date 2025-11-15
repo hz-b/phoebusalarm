@@ -1,0 +1,30 @@
+# ==================================================================
+# Configuration data for scripts in directory "administration_tools"
+#
+# Version 1.3
+# ==================================================================
+
+# Note: PROJECT_DIR *must* be set, when this file is sourced in a script.
+
+# Project name
+CNF_NAME="pyphoebusalarm"
+
+# Repository hoster
+CNF_HOSTER="sourceforge"
+
+# upstream repository:
+CNF_UPSTREAM_REPO="http://repo.acc.bessy.de/git/epics/support/pyphoebusalarm.git"
+
+# upstream repository type
+CNF_UPSTREAM_REPO_TYPE="git"
+
+# downstream repository with write access:
+CNF_DOWNSTREAM_REPO="ssh://goetzpf@git.code.sf.net/p/pyphoebusalarm/code"
+
+# downstream repository type
+CNF_DOWNSTREAM_REPO_TYPE="git"
+
+# Options for repo-mirror.sh
+# This script is part of bii_scripts (https://bii-scripts.sourceforge.io/):
+CNF_MIRROR_OPT=""
+
