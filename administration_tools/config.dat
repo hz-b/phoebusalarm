@@ -13,7 +13,7 @@ CNF_NAME="pyphoebusalarm"
 CNF_HOSTER="sourceforge"
 
 # upstream repository:
-CNF_UPSTREAM_REPO="http://repo.acc.bessy.de/git/epics/support/pyphoebusalarm.git"
+CNF_UPSTREAM_REPO="repo.acc.bessy.de:/opt/repositories/controls/git/epics/support/pyphoebusalarm.git"
 
 # upstream repository type
 CNF_UPSTREAM_REPO_TYPE="git"
