@@ -1,0 +1,11 @@
+[flake8]
+extend-ignore = E203
+exclude =
+    # pyuic generated files should be ignored
+    *_ui.py,
+    # ignore git, linter and cache files
+    .git,
+    __pycache__,
+    .tox
+max-line-length = 92
+max-complexity = 10

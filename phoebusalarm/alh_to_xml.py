@@ -26,7 +26,7 @@ import os
 
 from phoebusalarm.alhparser import parse_alh
 from phoebusalarm.alarmtree import InclusionMarker
-from phoebusalarm._version import get_versions
+from phoebusalarm import __version__
 
 
 def paste_subtree_into_base(baseTree, subTree, inclusionId):
@@ -143,10 +143,10 @@ def alh_to_xml():
         "included in the top alarm handler config."
     )
 
-    ver = get_versions()["version"]
-
     parser = argparse.ArgumentParser(description=dscString)
-    parser.add_argument("--version", action="version", version="%(prog)s v" + ver)
+    parser.add_argument(
+        "--version", action="version", version="%(prog)s v" + __version__
+    )
     parser.add_argument("input", help="alarm handler file to convert")
     parser.add_argument("-o", "--output", help="output xml-file")
     parser.add_argument("-c", "--config", help="name of the config in phoebus/kafka")

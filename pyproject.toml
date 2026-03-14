@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=80", "setuptools-scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "phoebusalarm"
+description = "Python Utilities for Phoebus"
+readme = { file = "README.md", content-type = "text/markdown" }
+requires-python = ">=3.5"
+license = { text = "GPL v3" }
+authors = [
+  { name = "Malte Gotz", email = "malte.gotz@helmholtz-berlin.de" }
+]
+urls = { "Homepage" = "https://gitlab.helmholtz-berlin.de/acs/pyphoebusalarm/" }
+
+dynamic = ["version"]
+
+[project.scripts]
+alh-to-xml = "phoebusalarm.alh_to_xml:alh_to_xml"
+
+[tool.setuptools_scm]
+version_file = "phoebusalarm/_version.py"
+
+[tool.setuptools.packages.find]
+include = ["phoebusalarm"]
+exclude = ["tests*"]
+
+[tool.pylint.MASTER]
+# created by versioneer: beyond our control
+ignore = ["_version.py"]
+
+[tool.pylint.BASIC]
+# always reject these names, likely temps
+bad-names = ["foo", "bar", "baz", "toto", "tutu", "tata", "blubb", "bla"]
+
+# always accept these names, short but still descriptive
+good-names = ["i", "j", "k", "ex", "Run", "_", "ui", "db", "pv"]
+
+module-naming-style = "snake_case"
+class-naming-style = "PascalCase"
+function-naming-style = "snake_case"
+method-naming-style = "snake_case"
+attr-naming-style = "camelCase"
+argument-naming-style = "camelCase"
+variable-naming-style = "camelCase"
+
+[tool.coverage.report]
+omit = ["*/_version.py"]
