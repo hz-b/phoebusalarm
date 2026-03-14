@@ -15,11 +15,6 @@ fi
 
 cd "$MYDIR"
 
-if [ ! -e "setup.py" ]; then
-    echo "error, setup.py not found, exiting..." >&2
-    exit 1
-fi
-
 VER=$(pip3 --version | sed -e 's/^pip \+//;s/ .*//')
 if [ -z "$VER" ]; then
     echo "error, pip3 not found, exiting..." >&2
@@ -28,16 +23,13 @@ fi
 
 MAJOR_VER=$(echo $VER | sed -e 's/\..*//')
 
-if [ "$MAJOR_VER" -le 9 ]; then
-    # very old python3 version, cannot use pip
-    python3 setup.py install --prefix=. --single-version-externally-managed --root .
+if [ "$MAJOR_VER" -le 19 ]; then
+    # very old pip, can't properly use the pyproject.toml
+    echo "error, version ${VER} of pip is too old, needs >19, exiting..." >&2
+    exit 1
 else
-    # Debian 12: Debian modified pip3 adds "local" dir to prefix
-    if [ ! -e "local" ]; then
-        ln -s . local
-    fi
-    
-    # modern pip, we can use pip:
-    pip3 install --prefix . --no-warn-script-location --no-cache-dir .
+    # modern pip, we create a venv to sidestep all the annyoing Debian changes to pip.
+    # This should give a more consistent result, ignoring most PYTHONUSERBASE and PYTHONPATH settings.
+    python3 -m venv venv && . venv/bin/activate && pip install --no-deps --no-warn-script-location --prefix . .
 fi
 
