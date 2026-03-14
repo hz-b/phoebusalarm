@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "phoebusalarm"
 description = "Python Utilities for Phoebus"
 readme = { file = "README.md", content-type = "text/markdown" }
-requires-python = ">=3.5"
+requires-python = ">=3.9"
 license = { text = "GPL v3" }
 authors = [
   { name = "Malte Gotz", email = "malte.gotz@helmholtz-berlin.de" }

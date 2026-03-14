@@ -11,7 +11,7 @@
 # them in a virtualenv and cache it as well.
 
 default:
-  image: python:3.5
+  image: python:3.9
   tags: 
     - docker
 
