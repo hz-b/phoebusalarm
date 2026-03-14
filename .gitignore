@@ -1,3 +1,4 @@
 *.pyc
 .spyproject
 .coverage
+.vscode
